@@ -78,7 +78,6 @@ struct psz_helper {
     static std::pair<std::string, std::string> separate_kv(std::string& s)
     {
         std::string delimiter = "=";
-
         if (s.find(delimiter) == std::string::npos)
             throw std::runtime_error("\e[1mnot a correct key-value syntax, must be \"opt=value\"\e[0m");
 
@@ -90,10 +89,14 @@ struct psz_helper {
 
     static void parse_strlist_as_kv(const char* in_str, map_t& kv_list)
     {
-        ss_t ss(in_str);
+        ss_t ss;
+        std::ifstream config_file(in_str);
+        if(config_file)
+            ss << config_file.rdbuf();
+        config_file.close();
         while (ss.good()) {
             std::string tmp;
-            std::getline(ss, tmp, ',');
+            std::getline(ss, tmp);
             kv_list.insert(separate_kv(tmp));
         }
     }
