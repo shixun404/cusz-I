@@ -97,10 +97,6 @@ COR::compress_predict(pszctx* ctx, T* in, void* stream)
 #elif defined(PSZ_USE_1API)
   auto len3 = sycl::range<3>(ctx->z, ctx->y, ctx->x);
 #endif
-  printf("alpha = %f, beta = %f, interpolators = {%d, %d, %d}, reverse = {%d, %d, %d}\n", \
-         ctx->intp_param.alpha,ctx->intp_param.beta, ctx->intp_param.interpolators[0],
-         ctx->intp_param.interpolators[1], ctx->intp_param.interpolators[2],
-         ctx->intp_param.reverse[0], ctx->intp_param.reverse[1], ctx->intp_param.reverse[2]);
   /* prediction-quantization with compaction */
   {
     if (spline_in_use()) {
