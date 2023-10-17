@@ -172,6 +172,30 @@ void pszctx_parse_control_string(
     else if (optmatch({"gpuverify"}) and is_enabled(v)) {
       ctx->use_gpu_verify = true;
     }
+    else if (optmatch({"alpha"})) {
+      ctx->intp_param.alpha = psz_helper::str2fp(v);
+    }
+    else if (optmatch({"beta"})) {
+      ctx->intp_param.beta = psz_helper::str2fp(v);
+    }
+    else if (optmatch({"intp_0"})) {
+      ctx->intp_param.interpolators[0] = psz_helper::str2int(v);
+    }
+    else if (optmatch({"intp_1"})) {
+      ctx->intp_param.interpolators[1] = psz_helper::str2int(v);
+    }
+    else if (optmatch({"intp_2"})) {
+      ctx->intp_param.interpolators[2] = psz_helper::str2int(v);
+    }
+    else if (optmatch({"rev_0"})) {
+      ctx->intp_param.reverse[0] = psz_helper::str2int(v);
+    }
+    else if (optmatch({"rev_1"})) {
+      ctx->intp_param.reverse[1] = psz_helper::str2int(v);
+    }
+    else if (optmatch({"rev_2"})) {
+      ctx->intp_param.reverse[2] = psz_helper::str2int(v);
+    }
   }
 }
 
