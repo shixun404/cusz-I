@@ -682,13 +682,6 @@ __forceinline__ __device__ void interpolate_stage(
 }  // namespace
 
 /********************************************************************************/
-template <typename T>
-__device__ void cusz::device_api::auto_tuning(
-    FP *temp
-    ){
-    atomicAdd(temp,1.0);
-}
-
 
 template <typename T1, typename T2, typename FP,int LINEAR_BLOCK_SIZE, bool WORKFLOW, bool PROBE_PRED_ERROR>
 __device__ void cusz::device_api::spline3d_layout2_interpolate(
@@ -960,15 +953,6 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         // c_gather_anchor<T>(shmem.data, anchor, anchor_leap);
         // version 2, use global mem, correct
         c_gather_anchor<T>(data, data_size, data_leap, anchor, anchor_leap);
-
-
-        //todo:auto-tuning kernel
-
-        FP temp=0;
-        cusz::device_api::auto_tuning<FP>(&temp);
-
-        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
-           printf("%d\n",temp);
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
