@@ -690,7 +690,7 @@ template <typename T, typename FP>
 __device__ void cusz::device_api::auto_tuning(
     FP *temp
     ){
-    atomicAdd(temp,1.0);
+    temp+=1.0;
 }
 
 
