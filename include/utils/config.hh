@@ -97,7 +97,8 @@ struct psz_helper {
         while (ss.good()) {
             std::string tmp;
             std::getline(ss, tmp);
-            kv_list.insert(separate_kv(tmp));
+            if(tmp.length()>=3)
+                kv_list.insert(separate_kv(tmp));
         }
     }
 
