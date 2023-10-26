@@ -109,7 +109,7 @@ namespace device_api {
  * device API
  ********************************************************************************/
 
-    template <typename T>
+    template <typename T,typename FP>
 __device__ void cusz::device_api::auto_tuning(FP *temp);
 
 template <
@@ -686,7 +686,7 @@ __forceinline__ __device__ void interpolate_stage(
 }  // namespace
 
 /********************************************************************************/
-template <typename T>
+template <typename T, typename FP>
 __device__ void cusz::device_api::auto_tuning(
     FP *temp
     ){
