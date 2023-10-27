@@ -689,42 +689,30 @@ __forceinline__ __device__ void interpolate_stage(
 template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
 __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3  data_size, FP eb_r, FP ebx2){
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
-    auto itix=TIX % 32;//follow the warp
-    auto c=TIX/32;//follow the warp
-    bool predicate=(itix<4 and c<6);
+    auto itix=TIX % 4;//follow the warp
+    auto c=TIX/4;//follow the warp
+    bool predicate=(c<6);
     if(predicate){
         auto x=4+8*itix;
         auto y=4;
         auto z=4;
         T pred=0;
         auto unit = 1;
-        switch(c){
-            case 0:
-                pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
-                break;
 
-            case 1:
-                pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
-                break;
-            case 2:
-                pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
-                break;
-            case 3:
-                pred = (s_data[z ][y- unit][x] + s_data[z ][y+ unit][x]) / 2;
-                break;
+        bool cubic=c%2;
+        bool axis=c/2;
+        bool flag_cub[2]={0,1};
+        bool flag_axis_z[3]={1,0,0};
+        bool flag_axis_y[3]={0,1,0};
+        bool flag_axis_x[3]={0,0,1};
+        T adjust_rate[2]={8.0/9.0,1};
 
-            case 4:
-                pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 16;
-                break;
-            case 5:
-                pred = (s_data[z ][y][x- unit] + s_data[z ][y][x+ unit]) / 2;
-                break;
+        pred=(-flag_cub[cubic]*s_data[z - 3*unit*flag_axis_z[axis]][y- 3*unit*flag_axis_y[axis]][x- 3*unit*flag_axis_x[axis]]
+            +9*s_data[z -unit*flag_axis_z[axis]][y-unit*flag_axis_y[axis]][x- unit*flag_axis_x[axis]]
+            +9*s_data[z +unit*flag_axis_z[axis]][y+unit*flag_axis_y[axis]][x+ unit*flag_axis_x[axis]]
+            -flag_cub[cubic]*s_data[z + 3*unit*flag_axis_z[axis]][y+ 3*unit*flag_axis_y[axis]][x+ 3*unit*flag_axis_x[axis]])/16;
 
-
-
-            default:
-            break;
-        }
+        pred*=adjust_rate[cubic];
         T abs_error=fabs(pred-s_data[z][y][x]);
 
     } 
