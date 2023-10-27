@@ -994,12 +994,12 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
 
         //todo:auto-tuning kernel
 
-        FP temp=0;
+       // FP temp=0;
         cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
             shmem.data, data_size, eb_r, ebx2);
 
-        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
-           printf("%d\n",temp);
+       // if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+        //   printf("%d\n",temp);
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
