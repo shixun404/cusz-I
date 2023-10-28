@@ -765,8 +765,8 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
         
 
     } 
-    if(TIX==0)
-        atomicAdd(count,local_count);
+   // if(TIX==0)
+   //     atomicAdd(count,local_count);
   //  __syncthreads(); needed?
 }
 
