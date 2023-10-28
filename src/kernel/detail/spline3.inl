@@ -769,8 +769,8 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 
     } 
     __syncthreads(); 
-    if(TIX<6)
-        atomicAdd(&errs[TIX],local_errs[TIX]);
+    //if(TIX<6)
+    //    atomicAdd(&errs[TIX],local_errs[TIX]);
     __syncthreads(); 
 }
 
