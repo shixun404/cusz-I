@@ -723,8 +723,8 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
 __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3  data_size, FP eb_r, FP ebx2,T * count){
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
-    auto itix=TIX % 32;//follow the warp
-    auto c=TIX/32;//follow the warp
+    auto itix=TIX % 32;
+    auto c=TIX/32;
     bool predicate=(itix<4 and c<6);
     __shared__ T local_count;
     if(TIX==0)
@@ -764,7 +764,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
             break;
         }
         T abs_error=fabs(pred-s_data[z][y][x]);
-        atomicAdd(&local_count,1);
+        atomicAdd(&local_count,1.0);
         
 
     } 
