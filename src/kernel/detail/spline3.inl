@@ -726,7 +726,9 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
     auto itix=TIX % 32;//follow the warp
     auto c=TIX/32;//follow the warp
     bool predicate=(itix<4 and c<6);
-    __shared__ T local_count=0;
+    __shared__ T local_count;
+    if(TIX==0)
+        local_count=0;
     if(predicate){
         auto x=4+8*itix;
         auto y=4;
