@@ -761,7 +761,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
             break;
         }
         T abs_error=fabs(pred-s_data[z][y][x]);
-        atomicAdd(&local_count,1);
+        //atomicAdd(&local_count,1);
         
 
     } 
