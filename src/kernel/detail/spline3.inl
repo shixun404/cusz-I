@@ -729,6 +729,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
     __shared__ T local_count;
     if(TIX==0)
         local_count=0;
+    __syncthreads(); 
     if(predicate){
         auto x=4+8*itix;
         auto y=4;
@@ -767,6 +768,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
         
 
     } 
+    __syncthreads(); 
     if(TIX==0)
         atomicAdd(count,local_count);
     __syncthreads(); 
