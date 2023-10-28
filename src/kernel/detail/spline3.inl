@@ -764,13 +764,13 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
             break;
         }
         T abs_error=fabs(pred-s_data[z][y][x]);
-    //    atomicAdd(&local_errs[c],abs_error);
+        atomicAdd(&local_errs[c],abs_error);//bugful
         
 
     } 
     __syncthreads(); 
-    //if(TIX<6)
-    //    atomicAdd(&errs[TIX],local_errs[TIX]);
+    if(TIX<6)
+        atomicAdd(&errs[TIX],local_errs[TIX]);//bugful
     __syncthreads(); 
 }
 
