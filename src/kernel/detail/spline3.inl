@@ -721,14 +721,14 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 }
 */
 template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
-__device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3  data_size, FP eb_r, FP ebx2,T * count){
+__device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3  data_size, FP eb_r, FP ebx2,T * errs){
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
     auto itix=TIX % 32;
     auto c=TIX/32;
     bool predicate=(itix<4 and c<6);
-    __shared__ T local_count;
-    if(TIX==0)
-        local_count=0;
+    __shared__ T local_errs[6];
+    if(TIX<6)
+        local_errs[TIX]=0;
     __syncthreads(); 
     if(predicate){
         auto x=4+8*itix;
@@ -764,13 +764,13 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
             break;
         }
         T abs_error=fabs(pred-s_data[z][y][x]);
-        atomicAdd(&local_count,1.0);
+        atomicAdd(&local_errs[c],abs_error);
         
 
     } 
     __syncthreads(); 
-    if(TIX==0)
-        atomicAdd(count,local_count);
+    if(TIX<6)
+        atomicAdd(errs[TIX],local_errs[TIX]);
     __syncthreads(); 
 }
 
@@ -1049,9 +1049,9 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
 
         //todo:auto-tuning kernel
 
-        T temp=0;
+        T temp[6]={0.0,0.0,0.0,0.0,0.0,0.0};
         cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
-            shmem.data, data_size, eb_r, ebx2,&temp);
+            shmem.data, data_size, eb_r, ebx2,temp);
 
        // if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //   printf("%d\n",temp);
