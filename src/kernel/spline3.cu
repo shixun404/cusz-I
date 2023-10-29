@@ -16,6 +16,7 @@
 #include "detail/spline3.inl"
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
+#include "memseg_cxx.hh"
 
 constexpr int DEFAULT_BLOCK_SIZE = 384;
 
