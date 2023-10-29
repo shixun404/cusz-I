@@ -724,19 +724,32 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
 __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, FP eb_r, FP ebx2,  T * errs){
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
-    auto itix=TIX % 32;
-    auto c=TIX/32;
-    bool predicate=(itix<4 and c<6);
+
+    //current design: 16 points: (4/12/20/28,3/5,3/5). 6 configs (3 directions, lin/cubic)
+
+    if not (BIX%2==0 and BIY%2==0 and BIZ%2==0){
+        return;
+    }
+    auto iti=TIX % 16;
+    auto c=TIX/16;
+    bool predicate=c<6;
     // __shared__ T local_errs[6];
+
+
 
     if(TIX<6)
         local_errs[TIX]=0;
     __syncthreads(); 
     if(predicate){
+
+        auto itix=iti%4;
+        iti=iti/4;
+        auto itiy=iti%2;
+        auto itiz=iti/2;
         auto x=4+8*itix;
         //auto x =16;
-        auto y=4;
-        auto z=4;
+        auto y=3+2*itiy;
+        auto z=3+2*itiz;
         T pred=0;
         auto unit = 1;
         switch(c){
