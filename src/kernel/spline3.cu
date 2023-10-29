@@ -122,7 +122,7 @@ int spline_reconstruct(
 #define INIT(T, E)                                                            \
   template int spline_construct<T, E>(                                        \
       pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl,    \
-      void* _outlier, double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream); \
+      void* _outlier, double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream, pszmem_cxx<T> * profiling_errors); \
   template int spline_reconstruct<T, E>(                                      \
       pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata,   \
       double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream);
