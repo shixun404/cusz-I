@@ -1068,7 +1068,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
             shmem.data, shmem.local_errs, data_size, eb_r, ebx2, errors);
 
         if(TIX<6 and BIX==0 and BIY==0 and BIZ==0)
-           printf("%d %.6f\n",TIX,errors[TIX]);
+           printf("global %d %.6f\n",TIX,errors[TIX]);
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
