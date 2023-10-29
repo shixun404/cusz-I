@@ -1100,6 +1100,8 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
                printf("cubic %d %d %d %d %d\n",TIX,BIX,BIY,BIZ,intp_param.interpolators[TIX]);
                printf("reverse %d %d %d %d %d\n",TIX,BIX,BIY,BIZ,intp_param.reverse[TIX]);
             }
+           if(TIX<6 )
+           printf("errs %d %d %d %d %.6f\n",TIX,BIX,BIY,BIZ,errors[TIX]);
         }
         
 
