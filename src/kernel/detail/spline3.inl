@@ -726,14 +726,15 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
     auto itix=TIX % 32;
     auto c=TIX/32;
-    bool predicate=(itix<4 and c<6);
+    bool predicate=(itix<1 and c<6);
     // __shared__ T local_errs[6];
 
     if(TIX<6)
         local_errs[TIX]=0;
     __syncthreads(); 
     if(predicate){
-        auto x=4+8*itix;
+        //auto x=4+8*itix;
+        auto x =16;
         auto y=4;
         auto z=4;
         T pred=0;
@@ -771,9 +772,9 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
 
     } 
     __syncthreads(); 
-    //if(TIX<6) {
-    //    atomicAdd(const_cast<T*>(errs) + TIX, local_errs[TIX]);
-    //}
+    if(TIX<6) {
+        atomicAdd(const_cast<T*>(errs) + TIX, local_errs[TIX]);
+    }
     //__syncthreads(); 
     //if(TIX<6 )
    //     printf("%d %.6f\n",TIX,errs[TIX]);
