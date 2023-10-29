@@ -1110,6 +1110,11 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
       bool do_reverse=(errors[5-do_cubic]>=errors[1-do_cubic]);
        intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
 
+       if(TIX==0 and BIX==0 and BIY==0 and BIZ==0){
+        printf("Cubic: %d %d %d\n",intp_param.interpolators[0],intp_param.interpolators[1],intp_param.interpolators[2]);
+        printf("reverse: %d %d %d\n",intp_param.reverse[0],intp_param.reverse[1],intp_param.reverse[2]);
+       }
+
 
         c_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
