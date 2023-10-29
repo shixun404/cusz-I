@@ -89,7 +89,8 @@ __global__ void c_spline3d_infprecis_32x8x8data(
     FP      eb_r,
     FP      ebx2,
     int     radius,
-    INTERPOLATION_PARAMS intp_param);
+    INTERPOLATION_PARAMS intp_param,
+    TITER errors);
 
 template <
     typename EITER,
@@ -1058,7 +1059,7 @@ __global__ void cusz::c_spline3d_profiling_32x8x8data(
 
         //todo:auto-tuning kernel
 
-        //if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;
+        if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;//risky
 
         //__syncthreads();
        
@@ -1086,7 +1087,8 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     FP      eb_r,
     FP      ebx2,
     int     radius,
-    INTERPOLATION_PARAMS intp_param
+    INTERPOLATION_PARAMS intp_param,
+    TITER errors
     )
 {
     // compile time variables
@@ -1097,9 +1099,16 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         __shared__ struct {
             T data[9][9][33];
             T ectrl[9][9][33];
-            T local_errs[6];
+
            // T global_errs[6];
         } shmem;
+
+        T cubic_errors=errors[0]+errors[2]+errors[4];
+        T linear_errors=errors[1]+errors[3]+errors[5];
+      bool do_cubic=(cubic_errors<linear_errors);
+      intp_param.interpolators[0]=intp_param.interpolators[1]=intp_param.interpolators[2]=do_cubic;
+      bool do_reverse=(errors[5-do_cubic]>errors[1-do_cubic]);
+       intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
 
 
         c_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
