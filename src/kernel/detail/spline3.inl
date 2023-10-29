@@ -471,9 +471,9 @@ __forceinline__ __device__ void interpolate_stage(
                   //  }
             auto global_x=BIX*BLOCK32+x, global_y=BIY*BLOCK8+y, global_z=BIZ*BLOCK8+z;
 
-            auto interpolation_coeff_set1={-1,-3};
-            auto interpolation_coeff_set2={9,23};
-            auto interpolation_coeff_set3={16,40};
+            auto interpolation_coeff_set1[2]={-1,-3};
+            auto interpolation_coeff_set2[2]={9,23};
+            auto interpolation_coeff_set3[2]={16,40};
             auto a=interpolation_coeff_set1[interpolator];
             auto b=interpolation_coeff_set2[interpolator];
             auto c=interpolation_coeff_set3[interpolator];
