@@ -1095,6 +1095,13 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
+
+        if(TIX<3 ){
+           printf("cubic %d %d %d %d %d\n",TIX,BIX,BIY,BIZ,intp_param.interpolators[TIX]);
+           printf("reverse %d %d %d %d %d\n",TIX,BIX,BIY,BIZ,intp_param.reverse[TIX]);
+        }
+        
+
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //    printf("interp\n");
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
