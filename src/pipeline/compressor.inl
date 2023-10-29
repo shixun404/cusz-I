@@ -104,7 +104,7 @@ COR::compress_predict(pszctx* ctx, T* in, void* stream)
       mem->od->dptr(in);
       spline_construct(
           mem->od, mem->ac, mem->e, (void*)mem->compact, eb, radius, intp_param,
-          &time_pred, stream);
+          &time_pred, stream,mem->pe);
 #else
       throw runtime_error(
           "[psz::error] spline_construct not implemented other than CUDA.");
