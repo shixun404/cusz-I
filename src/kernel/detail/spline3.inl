@@ -1081,8 +1081,8 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
             shmem.data, shmem.local_errs, data_size, eb_r, ebx2, errors);
 
-        if(TIX<6 )
-           printf("global %d %d %d %d %.6f\n",TIX,BIX,BIY,BIZ,errors[TIX]);
+        //if(TIX<6 )
+       //    printf("global %d %d %d %d %.6f\n",TIX,BIX,BIY,BIZ,errors[TIX]);
 
         //auto-tuning
         T cubic_errors=errors[0]+errors[2]+errors[4];
