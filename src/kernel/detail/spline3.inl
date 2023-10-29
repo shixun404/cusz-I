@@ -443,7 +443,7 @@ __forceinline__ __device__ void interpolate_stage(
     FP          eb_r,
     FP          ebx2,
     int         radius,
-    bool cubic)
+    bool interpolator)
 {
     static_assert(BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= 384, "block oversized");
     static_assert((BLUE or YELLOW or HOLLOW) == true, "must be one hot");
@@ -470,135 +470,118 @@ __forceinline__ __device__ void interpolate_stage(
                         printf("480 %.2e %.2e \n",s_data[z][y ][x- unit],s_data[z][y ][x+ unit]);*/
                   //  }
             auto global_x=BIX*BLOCK32+x, global_y=BIY*BLOCK8+y, global_z=BIZ*BLOCK8+z;
-            if(cubic){
-                if CONSTEXPR (BLUE) {  //
 
-                    if(BIZ!=GDZ-1){
+            auto interpolation_coeff_set1={-1,-3};
+            auto interpolation_coeff_set2={9,23};
+            auto interpolation_coeff_set3={16,40};
+            auto a=interpolation_coeff_set1[interpolator];
+            auto b=interpolation_coeff_set2[interpolator];
+            auto c=interpolation_coeff_set3[interpolator];
+           
+            if CONSTEXPR (BLUE) {  //
 
-                        if(z>=3*unit and z+3*unit<=BLOCK8  )
-                            pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
-                        else if (z+3*unit<=BLOCK8)
-                            pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
-                        else if (z>=3*unit)
-                            pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+                if(BIZ!=GDZ-1){
 
-                        else
-                            pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
-                    }
-                    else{
-                        if(z>=3*unit){
-                            if(z+3*unit<=BLOCK8 and global_z+3*unit<data_size.z)
-                                pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
-                            else if (global_z+unit<data_size.z)
-                                pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
-                            else
-                                pred=s_data[z - unit][y][x];
+                    if(z>=3*unit and z+3*unit<=BLOCK8  )
+                        pred = (a*s_data[z - 3*unit][y][x]+b*s_data[z - unit][y][x] + b*s_data[z + unit][y][x]+a*s_data[z + 3*unit][y][x]) / c;
+                    else if (z+3*unit<=BLOCK8)
+                        pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                    else if (z>=3*unit)
+                        pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
 
-                        }
-                        else{
-                            if(z+3*unit<=BLOCK8 and global_z+3*unit<data_size.z)
-                                pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
-                            else if (global_z+unit<data_size.z)
-                                pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
-                            else
-                                pred=s_data[z - unit][y][x];
-                        } 
-                    }
-                }
-                if CONSTEXPR (YELLOW) {  //
-                   // if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
-                   //     printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
-                  //  }
-                    if(BIY!=GDY-1){
-                        if(y>=3*unit and y+3*unit<=BLOCK8 )
-                            pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
-                        else if (y+3*unit<=BLOCK8)
-                            pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
-                        else if (y>=3*unit)
-                            pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
-                        else
-                            pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
-                    }
-                    else{
-                        if(y>=3*unit){
-                            if(y+3*unit<=BLOCK8 and global_y+3*unit<data_size.y)
-                                pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z][y - unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z ][y+ 3*unit][x]) / 16;
-                            else if (global_y+unit<data_size.y)
-                                pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 8;
-                            else
-                                pred=s_data[z ][y- unit][x];
-
-                        }
-                        else{
-                            if(y+3*unit<=BLOCK8 and global_y+3*unit<data_size.y)
-                                pred = (3*s_data[z][y - unit][x] + 6*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 8;
-                            else if (global_y+unit<data_size.y)
-                                pred = (s_data[z ][y- unit][x] + s_data[z][y + unit][x]) / 2;
-                            else
-                                pred=s_data[z ][y- unit][x];
-                        } 
-                    }
-                }
-
-                if CONSTEXPR (HOLLOW) {  //
-                    //if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1)
-                    //    printf("%d %d %d\n",x,y,z);
-                    if(BIX!=GDX-1){
-                        if(x>=3*unit and x+3*unit<=BLOCK32 )
-                            pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
-                        else if (x+3*unit<=BLOCK32)
-                            pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
-                        else if (x>=3*unit)
-                            pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
-                        else
-                            pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
-                    }
-                    else{
-                        if(x>=3*unit){
-                            if(x+3*unit<=BLOCK32 and global_x+3*unit<data_size.x)
-                                pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z][y ][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x+ 3*unit]) / 16;
-                            else if (global_x+unit<data_size.x)
-                                pred = (-s_data[z ][y][x- 3*unit]+6*s_data[z ][y][x- unit] + 3*s_data[z ][y][x+ unit]) / 8;
-                            else
-                                pred=s_data[z ][y][x- unit];
-
-                        }
-                        else{
-                            if(x+3*unit<=BLOCK32 and global_x+3*unit<data_size.x)
-                                pred = (3*s_data[z][y ][x- unit] + 6*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 8;
-                            else if (global_x+unit<data_size.x)
-                                pred = (s_data[z ][y][x- unit] + s_data[z][y ][x+ unit]) / 2;
-                            else
-                                pred=s_data[z ][y][x- unit];
-                        } 
-                    }
-                }
-                
-            }
-            else{
-                if CONSTEXPR (BLUE) {  //
-                    if(global_z+unit<data_size.z)
-                    
+                    else
                         pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
-                    else
-                        pred=s_data[z - unit][y][x];
                 }
-                if CONSTEXPR (YELLOW) {  //
-                    if(global_y+unit<data_size.y)
-                    
-                        pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
-                    else
-                        pred = s_data[z][y - unit][x];
-                }
+                else{
+                    if(z>=3*unit){
+                        if(z+3*unit<=BLOCK8 and global_z+3*unit<data_size.z)
+                            pred = (a*s_data[z - 3*unit][y][x]+b*s_data[z - unit][y][x] + b*s_data[z + unit][y][x]+a*s_data[z + 3*unit][y][x]) / c;
+                        else if (global_z+unit<data_size.z)
+                            pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+                        else
+                            pred=s_data[z - unit][y][x];
 
-                if CONSTEXPR (HOLLOW) {  //
-                    if(global_x+unit<data_size.x)
-                        pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
-                    else
-                        pred = s_data[z][y][x - unit];
+                    }
+                    else{
+                        if(z+3*unit<=BLOCK8 and global_z+3*unit<data_size.z)
+                            pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                        else if (global_z+unit<data_size.z)
+                            pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                        else
+                            pred=s_data[z - unit][y][x];
+                    } 
                 }
-                
             }
+            if CONSTEXPR (YELLOW) {  //
+               // if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
+               //     printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
+              //  }
+                if(BIY!=GDY-1){
+                    if(y>=3*unit and y+3*unit<=BLOCK8 )
+                        pred = (a*s_data[z ][y- 3*unit][x]+b*s_data[z ][y- unit][x] + b*s_data[z ][y+ unit][x]+a*s_data[z][y + 3*unit][x]) / c;
+                    else if (y+3*unit<=BLOCK8)
+                        pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                    else if (y>=3*unit)
+                        pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                    else
+                        pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                }
+                else{
+                    if(y>=3*unit){
+                        if(y+3*unit<=BLOCK8 and global_y+3*unit<data_size.y)
+                            pred = (a*s_data[z ][y- 3*unit][x]+b*s_data[z][y - unit][x] + b*s_data[z ][y+ unit][x]+a*s_data[z ][y+ 3*unit][x]) / c;
+                        else if (global_y+unit<data_size.y)
+                            pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 8;
+                        else
+                            pred=s_data[z ][y- unit][x];
+
+                    }
+                    else{
+                        if(y+3*unit<=BLOCK8 and global_y+3*unit<data_size.y)
+                            pred = (3*s_data[z][y - unit][x] + 6*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                        else if (global_y+unit<data_size.y)
+                            pred = (s_data[z ][y- unit][x] + s_data[z][y + unit][x]) / 2;
+                        else
+                            pred=s_data[z ][y- unit][x];
+                    } 
+                }
+            }
+
+            if CONSTEXPR (HOLLOW) {  //
+                //if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1)
+                //    printf("%d %d %d\n",x,y,z);
+                if(BIX!=GDX-1){
+                    if(x>=3*unit and x+3*unit<=BLOCK32 )
+                        pred = (a*s_data[z ][y][x- 3*unit]+b*s_data[z ][y][x- unit] + b*s_data[z ][y][x+ unit]+a*s_data[z ][y][x + 3*unit]) / c;
+                    else if (x+3*unit<=BLOCK32)
+                        pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
+                    else if (x>=3*unit)
+                        pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
+                    else
+                        pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                }
+                else{
+                    if(x>=3*unit){
+                        if(x+3*unit<=BLOCK32 and global_x+3*unit<data_size.x)
+                            pred = (a*s_data[z ][y][x- 3*unit]+b*s_data[z][y ][x- unit] + b*s_data[z ][y][x+ unit]+a*s_data[z ][y][x+ 3*unit]) / c;
+                        else if (global_x+unit<data_size.x)
+                            pred = (-s_data[z ][y][x- 3*unit]+6*s_data[z ][y][x- unit] + 3*s_data[z ][y][x+ unit]) / 8;
+                        else
+                            pred=s_data[z ][y][x- unit];
+
+                    }
+                    else{
+                        if(x+3*unit<=BLOCK32 and global_x+3*unit<data_size.x)
+                            pred = (3*s_data[z][y ][x- unit] + 6*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 8;
+                        else if (global_x+unit<data_size.x)
+                            pred = (s_data[z ][y][x- unit] + s_data[z][y ][x+ unit]) / 2;
+                        else
+                            pred=s_data[z ][y][x- unit];
+                    } 
+                }
+            }
+                
+            
             
 
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
@@ -763,20 +746,20 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
                     break;
 
                 case 1:
-                    pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                    pred = (-3*s_data[z - 3*unit][y][x]+23*s_data[z - unit][y][x] + 23*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 40;
                     break;
                 case 2:
                     pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
                     break;
                 case 3:
-                    pred = (s_data[z ][y- unit][x] + s_data[z ][y+ unit][x]) / 2;
+                    pred = (-3*s_data[z][y - 3*unit][x]+23*s_data[z ][y- unit][x] + 23*s_data[z ][y+ unit][x]-s_data[z ][y][x+ 3*unit]) / 40;
                     break;
 
                 case 4:
                     pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 16;
                     break;
                 case 5:
-                    pred = (s_data[z ][y][x- unit] + s_data[z ][y][x+ unit]) / 2;
+                    pred = (-3*s_data[z][y][x - 3*unit]+23*s_data[z][y][x - unit] + 23*s_data[z ][y][x+ unit]-s_data[z][y][x + 3*unit]) / 40;
                     break;
 
 
@@ -1106,11 +1089,11 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
        // T cubic_errors=errors[0]+errors[2]+errors[4];
        // T linear_errors=errors[1]+errors[3]+errors[5];
      // bool do_cubic=(cubic_errors<=linear_errors);
-      intp_param.interpolators[0]=(errors[0]<=errors[1]);
-      intp_param.interpolators[1]=(errors[2]<=errors[3]);
-      intp_param.interpolators[2]=(errors[4]<=errors[5]);
+      intp_param.interpolators[0]=(errors[0]>errors[1]);
+      intp_param.interpolators[1]=(errors[2]>errors[3]);
+      intp_param.interpolators[2]=(errors[4]>errors[5]);
       
-      bool do_reverse=(errors[5-intp_param.interpolators[2]]>=errors[1-intp_param.interpolators[0]]);
+      bool do_reverse=(errors[4+intp_param.interpolators[2]]>=errors[intp_param.interpolators[0]]);
        intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
 
        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0){

@@ -212,7 +212,7 @@ struct INTERPOLATION_PARAMS {
     bool reverse[3];
 
     //
-    INTERPOLATION_PARAMS() : interpolators{true, true, true}, reverse{false, false, false} {};
+    INTERPOLATION_PARAMS() : interpolators{false, false, false}, reverse{false, false, false} {};
 };
 
 
