@@ -1111,6 +1111,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
        intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
 
        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0){
+        printf("Errors: %d %d %d %d %d %d \n",errors[0],errors[1],errors[2],errors[3],errors[4],errors[5]);
         printf("Cubic: %d %d %d\n",intp_param.interpolators[0],intp_param.interpolators[1],intp_param.interpolators[2]);
         printf("reverse: %d %d %d\n",intp_param.reverse[0],intp_param.reverse[1],intp_param.reverse[2]);
        }
