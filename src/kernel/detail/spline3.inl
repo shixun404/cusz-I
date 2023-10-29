@@ -82,7 +82,8 @@ __global__ void c_spline3d_infprecis_32x8x8data(
     FP      eb_r,
     FP      ebx2,
     int     radius,
-    INTERPOLATION_PARAMS intp_param);
+    INTERPOLATION_PARAMS intp_param,
+    TITER errors);
 
 template <
     typename EITER,
@@ -1024,7 +1025,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     FP      ebx2,
     int     radius,
     INTERPOLATION_PARAMS intp_param,
-    TITER * errors)
+    TITER errors)
 {
     // compile time variables
     using T = typename std::remove_pointer<TITER>::type;
