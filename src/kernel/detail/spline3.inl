@@ -1084,6 +1084,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
        //    printf("global %d %d %d %d %.6f\n",TIX,BIX,BIY,BIZ,errors[TIX]);
 
         //auto-tuning
+         __syncthreads();
         T cubic_errors=errors[0]+errors[2]+errors[4];
         T linear_errors=errors[1]+errors[3]+errors[5];
         bool do_cubic=(cubic_errors<linear_errors);
