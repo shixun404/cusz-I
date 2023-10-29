@@ -56,7 +56,8 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
   //auto grid_num = grid_dim.x * grid_dim.y * grid_dim.z;
 
-  T profiling_errors [10] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+ // T profiling_errors [6] = {0.0,0.0,0.0,0.0,0.0,0.0};
+ auto profiling_errors = new pszmem_cxx<T> (6,1,1,"profiling_errors");
 
   cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
@@ -65,7 +66,7 @@ int spline_construct(
           ectrl->dptr(), ectrl->template len3<dim3>(),
           ectrl->template st3<dim3>(),  //
           anchor->dptr(), anchor->template st3<dim3>(), ot->val(), ot->idx(),
-          ot->num(), eb_r, ebx2, radius, intp_param,profiling_errors);
+          ot->num(), eb_r, ebx2, radius, intp_param,profiling_errors->dptr());
 
   STOP_GPUEVENT_RECORDING(stream);
   CHECK_GPU(GpuStreamSync(stream));
