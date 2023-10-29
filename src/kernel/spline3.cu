@@ -56,7 +56,7 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
   //auto grid_num = grid_dim.x * grid_dim.y * grid_dim.z;
 
-  T profiling_errors [6] = {0.0,0.0,0.0,0.0,0.0,0.0};
+  T profiling_errors [10] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
   cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
