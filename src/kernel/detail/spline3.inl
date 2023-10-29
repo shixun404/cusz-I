@@ -752,7 +752,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
                     pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
                     break;
                 case 3:
-                    pred = (-3*s_data[z][y - 3*unit][x]+23*s_data[z ][y- unit][x] + 23*s_data[z ][y+ unit][x]-3*s_data[z ][y][x+ 3*unit]) / 40;
+                    pred = (-3*s_data[z][y - 3*unit][x]+23*s_data[z ][y- unit][x] + 23*s_data[z ][y+ unit][x]-3*s_data[z ][y+ 3*unit][x]) / 40;
                     break;
 
                 case 4:
