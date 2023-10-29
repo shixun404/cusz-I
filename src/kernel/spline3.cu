@@ -17,10 +17,10 @@
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
 
-#include "mem/memseg_cxx.hh"
-#include "mem/memseg.h"
-#include "mem/layout.h"
-#include "mem/layout_cxx.hh"
+//#include "mem/memseg_cxx.hh"
+//#include "mem/memseg.h"
+//#include "mem/layout.h"
+//#include "mem/layout_cxx.hh"
 
 constexpr int DEFAULT_BLOCK_SIZE = 384;
 
@@ -42,7 +42,7 @@ constexpr int DEFAULT_BLOCK_SIZE = 384;
 template <typename T, typename E, typename FP>
 int spline_construct(
     pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl,
-    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream)
+    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream)//, pszmem_cxx<T>* profiling_errors)
 {
   constexpr auto BLOCK = 8;
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
@@ -63,6 +63,7 @@ int spline_construct(
 
  // T profiling_errors [6] = {0.0,0.0,0.0,0.0,0.0,0.0};
  auto profiling_errors = new pszmem_cxx<T> (6,1,1,"profiling_errors");
+ profiling_errors->control({Malloc, MallocHost});
 
   cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
