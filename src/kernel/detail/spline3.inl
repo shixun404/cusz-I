@@ -775,9 +775,9 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
         atomicAdd(const_cast<T*>(errs) + TIX, local_errs[TIX]);
     }
     __syncthreads(); 
-    if(TIX<6 )
-        printf("%d %.6f\n",TIX,errs[TIX]);
-    __syncthreads(); 
+    //if(TIX<6 )
+   //     printf("%d %.6f\n",TIX,errs[TIX]);
+   // __syncthreads(); 
 }
 
 
@@ -1067,8 +1067,8 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
             shmem.data, shmem.local_errs, data_size, eb_r, ebx2, errors);
 
-        if(TIX<6 and BIX==0 and BIY==0 and BIZ==0)
-           printf("global %d %.6f\n",TIX,errors[TIX]);
+        if(TIX<6 )
+           printf("global %d %d %d %d %.6f\n",TIX,BIX,BIY,BIZ,errors[TIX]);
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
