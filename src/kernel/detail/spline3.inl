@@ -1032,7 +1032,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
             T data[9][9][33];
             T ectrl[9][9][33];
             T local_errs[6];
-            T temp[6];
+           // T temp[6];
         } shmem;
 
 
@@ -1054,14 +1054,14 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
 
         //todo:auto-tuning kernel
 
-        // T temp[6]={0.0,0.0,0.0,0.0,0.0,0.0};
-        if (TIX < 6) shmem.temp[TIX] = 0.0;
+         T temp[6]={0.0,0.0,0.0,0.0,0.0,0.0};
+       // if (TIX < 6) shmem.temp[TIX] = 0.0;
 
-        __syncthreads();
+      //  __syncthreads();
         
 
         cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
-            shmem.data, shmem.local_errs, data_size, eb_r, ebx2, shmem.temp);
+            shmem.data, shmem.local_errs, data_size, eb_r, ebx2, temp);
 
        // if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //   printf("%d\n",temp);
