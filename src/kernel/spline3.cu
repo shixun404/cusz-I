@@ -65,23 +65,16 @@ int spline_construct(
  //auto profiling_errors = new pszmem_cxx<T> (6,1,1,"profiling_errors");
  //profiling_errors->control({Malloc, MallocHost});
 
- auto errors=const_cast<T*>(profiling_errors->dptr());
- for(auto i=0;i<6;i++)
-  errors[i]=0.0;
+
 
  cusz::c_spline3d_profiling_32x8x8data<T*, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
           data->dptr(), data->template len3<dim3>(),
           data->template st3<dim3>(),  //
           profiling_errors->dptr());
-/*
-T cubic_errors=errors[0]+errors[2]+errors[4];
-  T linear_errors=errors[1]+errors[3]+errors[5];
-      bool do_cubic=(cubic_errors<linear_errors);
-      intp_param.interpolators[0]=intp_param.interpolators[1]=intp_param.interpolators[2]=do_cubic;
-      bool do_reverse=(errors[5-do_cubic]>errors[1-do_cubic]);
-       intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
-*/
+
+
+
   cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
           data->dptr(), data->template len3<dim3>(),
@@ -89,7 +82,7 @@ T cubic_errors=errors[0]+errors[2]+errors[4];
           ectrl->dptr(), ectrl->template len3<dim3>(),
           ectrl->template st3<dim3>(),  //
           anchor->dptr(), anchor->template st3<dim3>(), ot->val(), ot->idx(),
-          ot->num(), eb_r, ebx2, radius, intp_param);
+          ot->num(), eb_r, ebx2, radius, intp_param,profiling_errors->dptr());
 
   STOP_GPUEVENT_RECORDING(stream);
   CHECK_GPU(GpuStreamSync(stream));
