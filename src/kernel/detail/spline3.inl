@@ -1091,7 +1091,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         intp_param.interpolators[0]=intp_param.interpolators[1]=intp_param.interpolators[2]=do_cubic;
         bool do_reverse=(errors[5-do_cubic]>errors[1-do_cubic]);
         intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
-        
+
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
