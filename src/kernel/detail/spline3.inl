@@ -116,8 +116,8 @@ namespace device_api {
  * device API
  ********************************************************************************/
 
-    template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
-__device__ void auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, FP eb_r, FP ebx2, volatile T* count);
+    template <typename T,int  LINEAR_BLOCK_SIZE>
+__device__ void auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, volatile T* count);
 
 template <
     typename T1,
@@ -727,8 +727,8 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
     
 }
 */
-template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
-__device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, FP eb_r, FP ebx2,  T * errs){
+template <typename T,int  LINEAR_BLOCK_SIZE>
+__device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size,  T * errs){
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
 
     //current design: 16 points: (4/12/20/28,3/5,3/5). 6 configs (3 directions, lin/cubic)
@@ -1035,7 +1035,7 @@ __global__ void cusz::c_spline3d_profiling_32x8x8data(
 {
     // compile time variables
     using T = typename std::remove_pointer<TITER>::type;
-    using E = typename std::remove_pointer<EITER>::type;
+ 
 
     {
         __shared__ struct {
@@ -1063,8 +1063,8 @@ __global__ void cusz::c_spline3d_profiling_32x8x8data(
         //__syncthreads();
        
 
-        cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
-            shmem.data, shmem.local_errs, data_size, eb_r, ebx2, errors);
+        cusz::device_api::auto_tuning<T,LINEAR_BLOCK_SIZE>(
+            shmem.data, shmem.local_errs, data_size, errors);
 
         
     }
@@ -1102,7 +1102,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         } shmem;
 
 
-        c_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
+        c_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, 0);
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //    printf("reset\n");
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)

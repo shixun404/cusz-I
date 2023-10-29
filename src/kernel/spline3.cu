@@ -67,7 +67,7 @@ int spline_construct(
 
  auto errors=profiling_errors->dptr();
  for(auto i=0;i<6;i++)
-  errs[i]=0.0;
+  errors[i]=0.0;
 
  cusz::c_spline3d_profiling_32x8x8data<T*, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
