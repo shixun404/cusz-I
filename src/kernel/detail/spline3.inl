@@ -470,20 +470,20 @@ __forceinline__ __device__ void interpolate_stage(
                         printf("480 %.2e %.2e \n",s_data[z][y ][x- unit],s_data[z][y ][x+ unit]);*/
                   //  }
             auto global_x=BIX*BLOCK32+x, global_y=BIY*BLOCK8+y, global_z=BIZ*BLOCK8+z;
-
+            /*
             int interpolation_coeff_set1[2]={-1,-3};
             int interpolation_coeff_set2[2]={9,23};
             int interpolation_coeff_set3[2]={16,40};
             auto a=interpolation_coeff_set1[interpolator];
             auto b=interpolation_coeff_set2[interpolator];
             auto c=interpolation_coeff_set3[interpolator];
-           
+            */
             if CONSTEXPR (BLUE) {  //
 
                 if(BIZ!=GDZ-1){
 
                     if(z>=3*unit and z+3*unit<=BLOCK8  )
-                        pred = (a*s_data[z - 3*unit][y][x]+b*s_data[z - unit][y][x] + b*s_data[z + unit][y][x]+a*s_data[z + 3*unit][y][x]) / c;
+                        pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
                     else if (z+3*unit<=BLOCK8)
                         pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
                     else if (z>=3*unit)
@@ -495,7 +495,7 @@ __forceinline__ __device__ void interpolate_stage(
                 else{
                     if(z>=3*unit){
                         if(z+3*unit<=BLOCK8 and global_z+3*unit<data_size.z)
-                            pred = (a*s_data[z - 3*unit][y][x]+b*s_data[z - unit][y][x] + b*s_data[z + unit][y][x]+a*s_data[z + 3*unit][y][x]) / c;
+                            pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
                         else if (global_z+unit<data_size.z)
                             pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
                         else
@@ -518,7 +518,7 @@ __forceinline__ __device__ void interpolate_stage(
               //  }
                 if(BIY!=GDY-1){
                     if(y>=3*unit and y+3*unit<=BLOCK8 )
-                        pred = (a*s_data[z ][y- 3*unit][x]+b*s_data[z ][y- unit][x] + b*s_data[z ][y+ unit][x]+a*s_data[z][y + 3*unit][x]) / c;
+                        pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
                     else if (y+3*unit<=BLOCK8)
                         pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
                     else if (y>=3*unit)
@@ -529,7 +529,7 @@ __forceinline__ __device__ void interpolate_stage(
                 else{
                     if(y>=3*unit){
                         if(y+3*unit<=BLOCK8 and global_y+3*unit<data_size.y)
-                            pred = (a*s_data[z ][y- 3*unit][x]+b*s_data[z][y - unit][x] + b*s_data[z ][y+ unit][x]+a*s_data[z ][y+ 3*unit][x]) / c;
+                            pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z][y - unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z ][y+ 3*unit][x]) / 16;
                         else if (global_y+unit<data_size.y)
                             pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 8;
                         else
@@ -552,7 +552,7 @@ __forceinline__ __device__ void interpolate_stage(
                 //    printf("%d %d %d\n",x,y,z);
                 if(BIX!=GDX-1){
                     if(x>=3*unit and x+3*unit<=BLOCK32 )
-                        pred = (a*s_data[z ][y][x- 3*unit]+b*s_data[z ][y][x- unit] + b*s_data[z ][y][x+ unit]+a*s_data[z ][y][x + 3*unit]) / c;
+                        pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
                     else if (x+3*unit<=BLOCK32)
                         pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
                     else if (x>=3*unit)
@@ -563,7 +563,7 @@ __forceinline__ __device__ void interpolate_stage(
                 else{
                     if(x>=3*unit){
                         if(x+3*unit<=BLOCK32 and global_x+3*unit<data_size.x)
-                            pred = (a*s_data[z ][y][x- 3*unit]+b*s_data[z][y ][x- unit] + b*s_data[z ][y][x+ unit]+a*s_data[z ][y][x+ 3*unit]) / c;
+                            pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z][y ][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x+ 3*unit]) / 16;
                         else if (global_x+unit<data_size.x)
                             pred = (-s_data[z ][y][x- 3*unit]+6*s_data[z ][y][x- unit] + 3*s_data[z ][y][x+ unit]) / 8;
                         else
