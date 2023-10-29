@@ -746,20 +746,20 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
                     break;
 
                 case 1:
-                    pred = (-3*s_data[z - 3*unit][y][x]+23*s_data[z - unit][y][x] + 23*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 40;
+                    pred = (-3*s_data[z - 3*unit][y][x]+23*s_data[z - unit][y][x] + 23*s_data[z + unit][y][x]-3*s_data[z + 3*unit][y][x]) / 40;
                     break;
                 case 2:
                     pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
                     break;
                 case 3:
-                    pred = (-3*s_data[z][y - 3*unit][x]+23*s_data[z ][y- unit][x] + 23*s_data[z ][y+ unit][x]-s_data[z ][y][x+ 3*unit]) / 40;
+                    pred = (-3*s_data[z][y - 3*unit][x]+23*s_data[z ][y- unit][x] + 23*s_data[z ][y+ unit][x]-3*s_data[z ][y][x+ 3*unit]) / 40;
                     break;
 
                 case 4:
                     pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 16;
                     break;
                 case 5:
-                    pred = (-3*s_data[z][y][x - 3*unit]+23*s_data[z][y][x - unit] + 23*s_data[z ][y][x+ unit]-s_data[z][y][x + 3*unit]) / 40;
+                    pred = (-3*s_data[z][y][x - 3*unit]+23*s_data[z][y][x - unit] + 23*s_data[z ][y][x+ unit]-3*s_data[z][y][x + 3*unit]) / 40;
                     break;
 
 
