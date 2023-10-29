@@ -110,7 +110,7 @@ namespace device_api {
  ********************************************************************************/
 
     template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
-__device__ void auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, FP eb_r, FP ebx2, volatile T* count);
+__global__ void auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, FP eb_r, FP ebx2, volatile T* count);
 
 template <
     typename T1,
@@ -721,7 +721,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 }
 */
 template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
-__device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, FP eb_r, FP ebx2, volatile T * errs){
+__global__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, FP eb_r, FP ebx2, T * errs){
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
     auto itix=TIX % 32;
     auto c=TIX/32;
@@ -774,8 +774,8 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
         atomicAdd(const_cast<T*>(errs) + TIX, local_errs[TIX]);
     }
     __syncthreads(); 
-    if(TIX<6 )
-        printf("%d %.6f\n",TIX,errs[TIX]);
+    //if(TIX<6 )
+    //    printf("%d %.6f\n",TIX,errs[TIX]);
 }
 
 
@@ -1034,7 +1034,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
             T data[9][9][33];
             T ectrl[9][9][33];
             T local_errs[6];
-            T global_errs[6];
+            //T global_errs[6];
         } shmem;
 
 
@@ -1056,17 +1056,17 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
 
         //todo:auto-tuning kernel
 
-        // T temp[6]={0.0,0.0,0.0,0.0,0.0,0.0};
-        if (TIX < 6) shmem.global_errs[TIX] = 0.0;
+         T global_errs[6]={0.0,0.0,0.0,0.0,0.0,0.0};
+      //  if (TIX < 6) shmem.global_errs[TIX] = 0.0;
 
         __syncthreads();
         
 
         cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
-            shmem.data, shmem.local_errs, data_size, eb_r, ebx2, shmem.global_errs);
+            shmem.data, shmem.local_errs, data_size, eb_r, ebx2, sglobal_errs);
 
         if(TIX<6 and BIX==0 and BIY==0 and BIZ==0)
-           printf("%d %.6f\n",TIX,shmem.global_errs[TIX]);
+           printf("%d %.6f\n",TIX,global_errs[TIX]);
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
