@@ -73,7 +73,7 @@ int spline_construct(
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
           data->dptr(), data->template len3<dim3>(),
           data->template st3<dim3>(),  //
-          errors);//profiling_errors->dptr());
+          profiling_errors->dptr());
 
 T cubic_errors=errors[0]+errors[2]+errors[4];
   T linear_errors=errors[1]+errors[3]+errors[5];
