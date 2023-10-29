@@ -1024,7 +1024,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     FP      ebx2,
     int     radius,
     INTERPOLATION_PARAMS intp_param,
-    T * errors)
+    TITER * errors)
 {
     // compile time variables
     using T = typename std::remove_pointer<TITER>::type;
