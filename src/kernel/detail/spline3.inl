@@ -58,6 +58,13 @@ namespace cusz {
 /********************************************************************************
  * host API
  ********************************************************************************/
+template <typename TITER, int LINEAR_BLOCK_SIZE>
+__global__ void c_spline3d_profiling_32x8x8data(
+    TITER   data,
+    DIM3    data_size,
+    STRIDE3 data_leap,
+    TITER errors);
+
 
 template <
     typename TITER,
@@ -82,8 +89,7 @@ __global__ void c_spline3d_infprecis_32x8x8data(
     FP      eb_r,
     FP      ebx2,
     int     radius,
-    INTERPOLATION_PARAMS intp_param,
-    TITER errors);
+    INTERPOLATION_PARAMS intp_param);
 
 template <
     typename EITER,
@@ -787,7 +793,6 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
             atomicAdd(const_cast<T*>(errs) + TIX, local_errs[TIX]);
         }
     }
-    __syncthreads(); 
     //if(TIX<6 )
    //     printf("%d %.6f\n",TIX,errs[TIX]);
    // __syncthreads(); 
@@ -1021,6 +1026,49 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
 /********************************************************************************
  * host API/kernel
  ********************************************************************************/
+template <typename TITER, int LINEAR_BLOCK_SIZE>
+__global__ void cusz::c_spline3d_profiling_32x8x8data(
+    TITER   data,
+    DIM3    data_size,
+    STRIDE3 data_leap,
+    TITER errors)
+{
+    // compile time variables
+    using T = typename std::remove_pointer<TITER>::type;
+    using E = typename std::remove_pointer<EITER>::type;
+
+    {
+        __shared__ struct {
+            T data[9][9][33];
+            T ectrl[9][9][33];
+            T local_errs[6];
+           // T global_errs[6];
+        } shmem;
+
+
+        c_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
+        //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+        //    printf("reset\n");
+        //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+        //    printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
+
+        global2shmem_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
+
+
+
+        //todo:auto-tuning kernel
+
+        //if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;
+
+        //__syncthreads();
+       
+
+        cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
+            shmem.data, shmem.local_errs, data_size, eb_r, ebx2, errors);
+
+        
+    }
+}
 
 template <typename TITER, typename EITER, typename FP, int LINEAR_BLOCK_SIZE, typename CompactVal, typename CompactIdx, typename CompactNum>
 __global__ void cusz::c_spline3d_infprecis_32x8x8data(
@@ -1038,8 +1086,8 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     FP      eb_r,
     FP      ebx2,
     int     radius,
-    INTERPOLATION_PARAMS intp_param,
-    TITER errors)
+    INTERPOLATION_PARAMS intp_param
+    )
 {
     // compile time variables
     using T = typename std::remove_pointer<TITER>::type;
@@ -1070,27 +1118,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         c_gather_anchor<T>(data, data_size, data_leap, anchor, anchor_leap);
 
 
-        //todo:auto-tuning kernel
-
-        if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;
-
-        __syncthreads();
        
-
-        cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
-            shmem.data, shmem.local_errs, data_size, eb_r, ebx2, errors);
-
-        //if(TIX<6 )
-       //    printf("global %d %d %d %d %.6f\n",TIX,BIX,BIY,BIZ,errors[TIX]);
-
-        //auto-tuning
-         __syncthreads();
-        T cubic_errors=errors[0]+errors[2]+errors[4];
-        T linear_errors=errors[1]+errors[3]+errors[5];
-        bool do_cubic=(cubic_errors<linear_errors);
-        intp_param.interpolators[0]=intp_param.interpolators[1]=intp_param.interpolators[2]=do_cubic;
-        bool do_reverse=(errors[5-do_cubic]>errors[1-do_cubic]);
-        intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
 
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
