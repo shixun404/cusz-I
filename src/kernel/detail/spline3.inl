@@ -823,7 +823,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  vola
     //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
 
     //current design: 16 points: (4/12/20/28,3/5,3/5). 6 configs (3 directions, lin/cubic)
-    if(BIX%2==0 and BIY%2==0 and BIZ%2==0){
+    if(BIX%100==0 and BIY%100==0 and BIZ%100==0){
 
         auto iti=TIX % 16;
         auto c=TIX/16;

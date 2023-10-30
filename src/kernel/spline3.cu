@@ -66,14 +66,14 @@ int spline_construct(
  //profiling_errors->control({Malloc, MallocHost});
 
 
-/*
+
  cusz::c_spline3d_profiling_32x8x8data<T*, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
           data->dptr(), data->template len3<dim3>(),
           data->template st3<dim3>(),  //
           profiling_errors->dptr());
 
-*/
+
 
   cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
