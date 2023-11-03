@@ -223,7 +223,7 @@ __device__ void c_reset_scratch_profiling_data(volatile T s_data[64], T nx[64][4
 {
     for (auto _tix = TIX; _tix < 64 * 4; _tix += LINEAR_BLOCK_SIZE) {
         auto x = (_tix % 4);
-        auto yz=tix/4;
+        auto yz=_tix/4;
 
         
 
@@ -359,8 +359,8 @@ __device__ void global2shmem_profiling_data(T1* data, DIM3 data_size, STRIDE3 da
         if (gx>=3 and gy>=3 and gz>=3 and gx+3 < data_size.x and gy+3 < data_size.y and gz+3 < data_size.z) {
             s_data[TIX] = data[gid];
             s_nx[TIX][0]=data[gid-3]; s_nx[TIX][1]=data[gid-1]; s_nx[TIX][2]=data[gid+1];s_nx[TIX][3]=data[gid+3];
-            s_ny[TIX][0]=data[gid-3 * data_leap.y]; s_ny[TIX][1]=data[gid- * data_leap.y]; s_ny[TIX][2]=data[gid+ * data_leap.y]; s_ny[TIX][3]=data[gid+3 * data_leap.y];
-            s_nz[TIX][0]=data[gid-3 * data_leap.z]; s_nz[TIX][1]=data[gid- * data_leap.z]; s_nz[TIX][2]=data[gid+ * data_leap.z]; s_nz[TIX][3]=data[gid+3 * data_leap.z];
+            s_ny[TIX][0]=data[gid-3 * data_leap.y]; s_ny[TIX][1]=data[gid- data_leap.y]; s_ny[TIX][2]=data[gid+ data_leap.y]; s_ny[TIX][3]=data[gid+3 * data_leap.y];
+            s_nz[TIX][0]=data[gid-3 * data_leap.z]; s_nz[TIX][1]=data[gid- data_leap.z]; s_nz[TIX][2]=data[gid+ data_leap.z]; s_nz[TIX][3]=data[gid+3 * data_leap.z];
            
         }
 /*
