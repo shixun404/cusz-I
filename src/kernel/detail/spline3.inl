@@ -340,7 +340,7 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
 }
 
 template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
-__device__ void global2shmem_profiling_16x16x16data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[9][9][33])
+__device__ void global2shmem_profiling_16x16x16data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[16][16][16])
 {
     constexpr auto TOTAL = 16 * 16 * 16;
 
