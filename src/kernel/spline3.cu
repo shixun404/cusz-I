@@ -67,7 +67,7 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
 
 
- cusz::c_spline3d_profiling_32x32x32data<T*, DEFAULT_BLOCK_SIZE>  //
+ cusz::c_spline3d_profiling_24x24x24data<T*, DEFAULT_BLOCK_SIZE>  //
       <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
           data->dptr(), data->template len3<dim3>(),
           data->template st3<dim3>(),  //
