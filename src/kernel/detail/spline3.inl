@@ -59,7 +59,7 @@ namespace cusz {
  * host API
  ********************************************************************************/
 template <typename TITER, int LINEAR_BLOCK_SIZE>
-__global__ void c_spline3d_profiling_32x32x32data(
+__global__ void c_spline3d_profiling_24x24x24data(
     TITER   data,
     DIM3    data_size,
     STRIDE3 data_leap,
@@ -219,12 +219,12 @@ __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatil
 
 
 template <typename T, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
-__device__ void c_reset_scratch_profiling_32x32x32data(volatile T s_data[32][32][32], T default_value)
+__device__ void c_reset_scratch_profiling_24x24x24data(volatile T s_data[24][24][24], T default_value)
 {
-    for (auto _tix = TIX; _tix < 32 * 32 * 32; _tix += LINEAR_BLOCK_SIZE) {
-        auto x = (_tix % 32);
-        auto y = (_tix / 32) % 32;
-        auto z = (_tix / 32) / 32;
+    for (auto _tix = TIX; _tix < 24 * 24 * 24; _tix += LINEAR_BLOCK_SIZE) {
+        auto x = (_tix % 24);
+        auto y = (_tix / 24) % 24;
+        auto z = (_tix / 24) / 24;
 
         s_data[z][y][x] = default_value;
 
@@ -340,23 +340,23 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
 }
 
 template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
-__device__ void global2shmem_profiling_32x32x32data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[32][32][32])
+__device__ void global2shmem_profiling_24x24x24data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[24][24][24])
 {
-    constexpr auto TOTAL = 32 * 32 * 32;
+    constexpr auto TOTAL = 24 * 24 * 24;
 
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-        auto x   = (_tix % 32);
-        auto y   = (_tix / 32) % 32;
-        auto z   = (_tix / 32) / 32;
+        auto x   = (_tix % 24);
+        auto y   = (_tix / 24) % 24;
+        auto z   = (_tix / 24) / 24;
         auto gx_1=x/8;
         auto gx_2=x%8;
         auto gy_1=y/8;
         auto gy_2=y%8;
         auto gz_1=z/8;
         auto gz_2=z%8;
-        auto gx=(data_size.x/8)*gx_1+gx_2;
-        auto gy=(data_size.y/8)*gy_1+gy_2;
-        auto gz=(data_size.z/8)*gz_1+gz_2;
+        auto gx=(data_size.x/3)*gx_1+gx_2;
+        auto gy=(data_size.y/3)*gy_1+gy_2;
+        auto gz=(data_size.z/3)*gz_1+gz_2;
 
         auto gid = gx + gy * data_leap.y + gz * data_leap.z;
 
@@ -868,20 +868,20 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 }
 */
 template <typename T,int  LINEAR_BLOCK_SIZE>
-__device__ void cusz::device_api::auto_tuning(volatile T s_data[32][32][32],  volatile T local_errs[6], DIM3  data_size,  T * errs){
+__device__ void cusz::device_api::auto_tuning(volatile T s_data[24][24][24],  volatile T local_errs[6], DIM3  data_size,  T * errs){
  
-    if(TIX<2)
+    if(TIX<6)
         local_errs[TIX]=0;
     __syncthreads(); 
 
-   // auto local_idx=TIX%2;
-    //auto temp=TIX/2;
+   auto local_idx=TIX%2;
+    auto temp=TIX/2;
     
 
-    auto block_idx_x =  TIX % 4;
-    auto block_idx_y = ( TIX / 4) % 4;
-    auto block_idx_z = ( ( TIX  / 4) / 4) % 4;
-    auto c = ( ( TIX  / 4) / 4) / 4;
+    auto block_idx_x =  temp % 3;
+    auto block_idx_y = ( temp / 3) % 3;
+    auto block_idx_z = ( ( temp  / 3) / 3) % 3;
+    auto c = ( ( temp  / 3) / 3) / 3;
 
 
 
@@ -895,10 +895,10 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[32][32][32],  vo
 
        
         
-        auto x=8*block_idx_x+4;
+        auto x=8*block_idx_x+3+2*local_idx;
         //auto x =16;
-        auto y=8*block_idx_y+4;
-        auto z=8*block_idx_z+4;
+        auto y=8*block_idx_y+3+2*local_idx;
+        auto z=8*block_idx_z+3+2*local_idx;
 
         
         T pred=0;
@@ -1173,7 +1173,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
  * host API/kernel
  ********************************************************************************/
 template <typename TITER, int LINEAR_BLOCK_SIZE>
-__global__ void cusz::c_spline3d_profiling_32x32x32data(
+__global__ void cusz::c_spline3d_profiling_24x24x24data(
     TITER   data,
     DIM3    data_size,
     STRIDE3 data_leap,
@@ -1185,19 +1185,19 @@ __global__ void cusz::c_spline3d_profiling_32x32x32data(
 
     {
         __shared__ struct {
-            T data[32][32][32];
+            T data[24][24][24];
             T local_errs[6];
            // T global_errs[6];
         } shmem;
 
 
-        c_reset_scratch_profiling_32x32x32data<T, LINEAR_BLOCK_SIZE>(shmem.data, 0.0);
+        c_reset_scratch_profiling_24x24x24data<T, LINEAR_BLOCK_SIZE>(shmem.data, 0.0);
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //    printf("reset\n");
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //    printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
 
-        global2shmem_profiling_32x32x32data<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
+        global2shmem_profiling_24x24x24data<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
 
 
 
