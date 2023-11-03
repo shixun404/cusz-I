@@ -59,7 +59,7 @@ namespace cusz {
  * host API
  ********************************************************************************/
 template <typename TITER, int LINEAR_BLOCK_SIZE>
-__global__ void c_spline3d_profiling_24x24x24data(
+__global__ void c_spline3d_profiling_data(
     TITER   data,
     DIM3    data_size,
     STRIDE3 data_leap,
