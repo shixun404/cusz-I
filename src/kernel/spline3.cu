@@ -54,21 +54,21 @@ int spline_construct(
   auto grid_dim =
       dim3(div(l3.x, BLOCK * 4), div(l3.y, BLOCK), div(l3.z, BLOCK));
 
+
+  auto auto_tuning_grid_dim =
+      dim3(1, 1, 1);
+
+
+
   using Compact = typename CompactDram<PROPER_GPU_BACKEND, T>::Compact;
   auto ot = (Compact*)_outlier;
 
   CREATE_GPUEVENT_PAIR;
   START_GPUEVENT_RECORDING(stream);
-  //auto grid_num = grid_dim.x * grid_dim.y * grid_dim.z;
-
- // T profiling_errors [6] = {0.0,0.0,0.0,0.0,0.0,0.0};
- //auto profiling_errors = new pszmem_cxx<T> (6,1,1,"profiling_errors");
- //profiling_errors->control({Malloc, MallocHost});
 
 
-
- cusz::c_spline3d_profiling_32x8x8data<T*, DEFAULT_BLOCK_SIZE>  //
-      <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+ cusz::c_spline3d_profiling_16x16x16data<T*, DEFAULT_BLOCK_SIZE>  //
+      <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
           data->dptr(), data->template len3<dim3>(),
           data->template st3<dim3>(),  //
           profiling_errors->dptr());
