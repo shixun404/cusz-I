@@ -219,14 +219,16 @@ __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatil
 
 
 template <typename T, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
-__device__ void c_reset_scratch_profiling_24x24x24data(volatile T s_data[24][24][24], T default_value)
+__device__ void c_reset_scratch_profiling_data(volatile T s_data[64], T nx[64][4], T ny[64][4], T nz[64][4],T default_value)
 {
-    for (auto _tix = TIX; _tix < 24 * 24 * 24; _tix += LINEAR_BLOCK_SIZE) {
-        auto x = (_tix % 24);
-        auto y = (_tix / 24) % 24;
-        auto z = (_tix / 24) / 24;
+    for (auto _tix = TIX; _tix < 64 * 4; _tix += LINEAR_BLOCK_SIZE) {
+        auto x = (_tix % 4);
+        auto yz=tix/4;
 
-        s_data[z][y][x] = default_value;
+        
+
+        nx[yz][x]=ny[yz][x]=nz[yz][x]=default_value;
+        s_data[TIX] = default_value;
 
     }
 }
@@ -340,27 +342,27 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
 }
 
 template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
-__device__ void global2shmem_profiling_24x24x24data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[24][24][24])
+__device__ void global2shmem_profiling_data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[64], volatile T2 s_nx[64][4], volatile T2 s_ny[64][4], volatile T2 s_nz[64][4])
 {
-    constexpr auto TOTAL = 24 * 24 * 24;
+    constexpr auto TOTAL = 4 * 4 * 4;
 
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-        auto x   = (_tix % 24);
-        auto y   = (_tix / 24) % 24;
-        auto z   = (_tix / 24) / 24;
-        auto gx_1=x/8;
-        auto gx_2=x%8;
-        auto gy_1=y/8;
-        auto gy_2=y%8;
-        auto gz_1=z/8;
-        auto gz_2=z%8;
-        auto gx=(data_size.x/3)*gx_1+gx_2;
-        auto gy=(data_size.y/3)*gy_1+gy_2;
-        auto gz=(data_size.z/3)*gz_1+gz_2;
+        auto x   = (_tix % 4);
+        auto y   = (_tix / 4) % 4;
+        auto z   = (_tix / 4) / 4;
+        auto gx=(data_size.x/4)*x+data_size.x/8;
+        auto gy=(data_size.y/4)*y+data_size.y/8;
+        auto gz=(data_size.z/4)*z+data_size.z/8;
 
         auto gid = gx + gy * data_leap.y + gz * data_leap.z;
 
-        if (gx < data_size.x and gy < data_size.y and gz < data_size.z) s_data[z][y][x] = data[gid];
+        if (gx>=3 and gy>=3 and gz>=3 and gx+3 < data_size.x and gy+3 < data_size.y and gz+3 < data_size.z) {
+            s_data[TIX] = data[gid];
+            s_nx[TIX]={data[gid-3],data[gid-1],data[gid+1],data[gid+3]};
+            s_ny[TIX]={data[gid-3 * data_leap.y],data[gid- * data_leap.y],data[gid+ * data_leap.y],data[gid+3 * data_leap.y]};
+            s_nz[TIX]={data[gid-3 * data_leap.z],data[gid- * data_leap.z],data[gid+ * data_leap.z],data[gid+3 * data_leap.z]};
+           
+        }
 /*
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
             printf("g2s1084 %d %d %d %d %.2e %.2e \n",gx,gy,gz,gid,s_data[z][y][x],data[gid]);
@@ -868,62 +870,48 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 }
 */
 template <typename T,int  LINEAR_BLOCK_SIZE>
-__device__ void cusz::device_api::auto_tuning(volatile T s_data[24][24][24],  volatile T local_errs[6], DIM3  data_size,  T * errs){
+__device__ void cusz::device_api::auto_tuning(volatile T s_data[64], volatile T s_nx[64][4], volatile T s_ny[64][4], volatile T s_nz[64][4],  volatile T local_errs[6], DIM3  data_size,  T * errs){
  
     if(TIX<6)
         local_errs[TIX]=0;
     __syncthreads(); 
 
-   auto local_idx=TIX%2;
-    auto temp=TIX/2;
-    
-
-    auto block_idx_x =  temp % 3;
-    auto block_idx_y = ( temp / 3) % 3;
-    auto block_idx_z = ( ( temp  / 3) / 3) % 3;
-    auto c = ( ( temp  / 3) / 3) / 3;
-
+    auto point_idx=TIX%64;
+    auto c=TIX/64;
 
 
     bool predicate=  c<6;
     // __shared__ T local_errs[6];
 
-
-
     
     if(predicate){
 
        
-        
-        auto x=8*block_idx_x+3+2*local_idx;
-        //auto x =16;
-        auto y=8*block_idx_y+3+2*local_idx;
-        auto z=8*block_idx_z+3+2*local_idx;
-
+    
         
         T pred=0;
 
         //auto unit = 1;
         switch(c){
                 case 0:
-                    pred = (-s_data[z - 3][y][x]+9*s_data[z - 1][y][x] + 9*s_data[z + 1][y][x]-s_data[z + 3][y][x]) / 16;
+                    pred = (-s_nz[point_idx][0]+9*s_nz[point_idx][1] + 9*s_nz[point_idx][2]-s_nz[point_idx][3]) / 16;
                     break;
 
                 case 1:
-                    pred = (-3*s_data[z - 3][y][x]+23*s_data[z - 1][y][x] + 23*s_data[z + 1][y][x]-3*s_data[z + 3][y][x]) / 40;
+                    pred = (-3*s_nz[point_idx][0]+23*s_nz[point_idx][1] + 23*s_nz[point_idx][2]-3*s_nz[point_idx][3]) / 40;
                     break;
                 case 2:
-                    pred = (-s_data[z ][y- 3][x]+9*s_data[z ][y- 1][x] + 9*s_data[z ][y+ 1][x]-s_data[z][y + 3][x]) / 16;
+                    pred = (-s_ny[point_idx][0]+9*s_ny[point_idx][1] + 9*s_ny[point_idx][2]-s_ny[point_idx][3]) / 16;
                     break;
                 case 3:
-                    pred = (-3*s_data[z][y - 3][x]+23*s_data[z ][y- 1][x] + 23*s_data[z ][y+ 1][x]-3*s_data[z ][y+ 3][x]) / 40;
+                    pred = (-3*s_ny[point_idx][0]+23*s_ny[point_idx][1] + 23*s_ny[point_idx][2]-3*s_ny[point_idx][3]) / 40;
                     break;
 
                 case 4:
-                    pred = (-s_data[z ][y][x- 3]+9*s_data[z ][y][x- 1] + 9*s_data[z ][y][x+ 1]-s_data[z][y ][x+ 3]) / 16;
+                    pred = (-s_nx[point_idx][0]+9*s_nx[point_idx][1] + 9*s_nx[point_idx][2]-s_nx[point_idx][3]) / 16;
                     break;
                 case 5:
-                    pred = (-3*s_data[z][y][x - 3]+23*s_data[z][y][x - 1] + 23*s_data[z ][y][x+ 1]-3*s_data[z][y][x + 3]) / 40;
+                    pred = (-3*s_nx[point_idx][0]+23*s_nx[point_idx][1] + 23*s_nx[point_idx][2]-3*s_nx[point_idx][3]) / 40;
                     break;
 
 
@@ -932,7 +920,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[24][24][24],  vo
                 break;
             }
         
-        T abs_error=fabs(pred-s_data[z][y][x]);
+        T abs_error=fabs(pred-s_data[point_idx]);
         atomicAdd(const_cast<T*>(local_errs) + c, abs_error);
         
 
@@ -1173,7 +1161,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
  * host API/kernel
  ********************************************************************************/
 template <typename TITER, int LINEAR_BLOCK_SIZE>
-__global__ void cusz::c_spline3d_profiling_24x24x24data(
+__global__ void cusz::c_spline3d_profiling_data(
     TITER   data,
     DIM3    data_size,
     STRIDE3 data_leap,
@@ -1185,19 +1173,22 @@ __global__ void cusz::c_spline3d_profiling_24x24x24data(
 
     {
         __shared__ struct {
-            T data[24][24][24];
+            T data[64];
+            T neighbor_x [64][4];
+            T neighbor_y [64][4];
+            T neighbor_z [64][4];
             T local_errs[6];
            // T global_errs[6];
         } shmem;
 
 
-        c_reset_scratch_profiling_24x24x24data<T, LINEAR_BLOCK_SIZE>(shmem.data, 0.0);
+        c_reset_scratch_profiling_data<T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.neighbor_x, shmem.neighbor_y, shmem.neighbor_z,0.0);
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //    printf("reset\n");
         //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
         //    printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
 
-        global2shmem_profiling_24x24x24data<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
+        global2shmem_profiling_data<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap,shmem.data, shmem.neighbor_x, shmem.neighbor_y, shmem.neighbor_z);
 
 
 
@@ -1209,7 +1200,7 @@ __global__ void cusz::c_spline3d_profiling_24x24x24data(
        
 
         cusz::device_api::auto_tuning<T,LINEAR_BLOCK_SIZE>(
-            shmem.data, shmem.local_errs, data_size, errors);
+            shmem.data, shmem.neighbor_x, shmem.neighbor_y, shmem.neighbor_z, shmem.local_errs, data_size, errors);
 
         
     }
