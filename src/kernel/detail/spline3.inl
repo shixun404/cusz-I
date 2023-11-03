@@ -1249,7 +1249,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
       intp_param.interpolators[1]=(errors[2]>errors[3]);
       intp_param.interpolators[2]=(errors[4]>errors[5]);
       
-      bool do_reverse=(errors[4+intp_param.interpolators[2]]>2*errors[intp_param.interpolators[0]]);
+      bool do_reverse=(errors[4+intp_param.interpolators[2]]>3*errors[intp_param.interpolators[0]]);
        // bool do_reverse=(errors[1]>2*errors[0]);
        intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
        /*
