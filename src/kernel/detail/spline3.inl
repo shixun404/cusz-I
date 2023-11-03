@@ -868,7 +868,7 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3
 }
 */
 template <typename T,int  LINEAR_BLOCK_SIZE>
-__device__ void cusz::device_api::auto_tuning(volatile T s_data[16][16][16],  volatile T local_errs[2], DIM3  data_size,  T * errs){
+__device__ void cusz::device_api::auto_tuning(volatile T s_data[32][32][32],  volatile T local_errs[6], DIM3  data_size,  T * errs){
  
     if(TIX<2)
         local_errs[TIX]=0;
