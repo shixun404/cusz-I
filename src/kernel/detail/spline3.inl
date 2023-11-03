@@ -344,12 +344,14 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
 template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void global2shmem_profiling_data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[64], volatile T2 s_nx[64][4], volatile T2 s_ny[64][4], volatile T2 s_nz[64][4])
 {
-    constexpr auto TOTAL = 4 * 4 * 4;
-
+    constexpr auto TOTAL = 64 * 4;
+    int factors[4]={-3,-1,1,3};
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-        auto x   = (_tix % 4);
-        auto y   = (_tix / 4) % 4;
-        auto z   = (_tix / 4) / 4;
+        auto offset   = (_tix % 4);
+        auto idx = _tix /4;
+        auto x = idx%4;
+        auto y   = (idx / 4) % 4;
+        auto z   = (idx / 4) / 4;
         auto gx=(data_size.x/4)*x+data_size.x/8;
         auto gy=(data_size.y/4)*y+data_size.y/8;
         auto gz=(data_size.z/4)*z+data_size.z/8;
@@ -357,10 +359,12 @@ __device__ void global2shmem_profiling_data(T1* data, DIM3 data_size, STRIDE3 da
         auto gid = gx + gy * data_leap.y + gz * data_leap.z;
 
         if (gx>=3 and gy>=3 and gz>=3 and gx+3 < data_size.x and gy+3 < data_size.y and gz+3 < data_size.z) {
-            s_data[TIX] = data[gid];
-            s_nx[TIX][0]=data[gid-3]; s_nx[TIX][1]=data[gid-1]; s_nx[TIX][2]=data[gid+1];s_nx[TIX][3]=data[gid+3];
-            s_ny[TIX][0]=data[gid-3 * data_leap.y]; s_ny[TIX][1]=data[gid- data_leap.y]; s_ny[TIX][2]=data[gid+ data_leap.y]; s_ny[TIX][3]=data[gid+3 * data_leap.y];
-            s_nz[TIX][0]=data[gid-3 * data_leap.z]; s_nz[TIX][1]=data[gid- data_leap.z]; s_nz[TIX][2]=data[gid+ data_leap.z]; s_nz[TIX][3]=data[gid+3 * data_leap.z];
+            s_data[idx] = data[gid];
+            
+            auto factor=factors[offset];
+            s_nx[idx][offset]=data[gid+factor];
+            s_ny[idx][offset]=data[gid+factor*data_leap.y];
+            s_nz[idx][offset]=data[gid+factor*data_leap.z];
            
         }
 /*
