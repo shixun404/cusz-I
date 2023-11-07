@@ -93,12 +93,20 @@ int spline_construct(
     intp_param.alpha=a5+(a4-a5)*(rel_eb-e5)/(e4-e5);
    else
     intp_param.alpha=a5;
-
-   cusz::c_spline3d_profiling_16x16x16data<T*, DEFAULT_BLOCK_SIZE>  //
+    if(interp_param.auto_tuning==1){
+      cusz::c_spline3d_profiling_16x16x16data<T*, DEFAULT_BLOCK_SIZE>  //
         <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
             data->dptr(), data->template len3<dim3>(),
             data->template st3<dim3>(),  //
             profiling_errors->dptr());
+    }
+    else{
+      cusz::c_spline3d_profiling_data_2<T*, DEFAULT_BLOCK_SIZE>  //
+        <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+            data->dptr(), data->template len3<dim3>(),
+            data->template st3<dim3>(),  //
+            profiling_errors->dptr());
+    }
    // profiling_errors->control({D2H});
    
     CHECK_GPU(cudaMemcpy(profiling_errors->m->h, profiling_errors->m->d, profiling_errors->m->bytes, cudaMemcpyDeviceToHost));

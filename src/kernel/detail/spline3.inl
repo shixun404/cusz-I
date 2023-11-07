@@ -65,6 +65,12 @@ __global__ void c_spline3d_profiling_16x16x16data(
     STRIDE3 data_leap,
     TITER errors);
 
+template <typename TITER, int LINEAR_BLOCK_SIZE>
+__global__ void c_spline3d_profiling_data_2(
+    TITER   data,
+    DIM3    data_size,
+    STRIDE3 data_leap,
+    TITER errors);
 
 template <
     typename TITER,
