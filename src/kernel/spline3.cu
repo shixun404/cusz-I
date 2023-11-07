@@ -100,15 +100,15 @@ int spline_construct(
             data->template st3<dim3>(),  //
             profiling_errors->dptr());
    // profiling_errors->control({D2H});
-   /*
+   
     CHECK_GPU(cudaMemcpy(profiling_errors->m->h, profiling_errors->m->d, profiling_errors->m->bytes, cudaMemcpyDeviceToHost));
     auto errors=profiling_errors->hptr();
     
     //printf("host %.4f %.4f\n",errors[0],errors[1]);
     bool do_reverse=(errors[1]>3*errors[0]);
     intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
-    */
     
+  
   }
 
 
