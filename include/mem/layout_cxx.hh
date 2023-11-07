@@ -30,6 +30,7 @@ class pszmempool_cxx {
   pszmem_cxx<T> *od;           // original data
   pszmem_cxx<T> *xd, *xdtest;  // decomp'ed data (xdtest for testing)
   pszmem_cxx<T> *ac;           // anchor
+  pszmem_cxx<T> *pe;           // profiling error
   pszmem_cxx<E> *e, *etest;    // ectrl (etest for testing)
   pszmem_cxx<F> *ht;           // hist/frequency
 
@@ -72,6 +73,7 @@ TPL POOL::pszmempool_cxx(u4 x, int _radius, u4 y, u4 z)
 
   // for spline
   constexpr auto BLK = 8;
+  constexpr auto ERR_HISTO_LEN = 6;
 
   _compressed = new pszmem_cxx<B>(len * 1.2, 1, 1, "compressed");
 
@@ -79,6 +81,7 @@ TPL POOL::pszmempool_cxx(u4 x, int _radius, u4 y, u4 z)
   xd = new pszmem_cxx<T>(x, y, z, "reconstructed data");
   xdtest = new pszmem_cxx<T>(x, y, z, "reconstructed data (test)");
   ac = new pszmem_cxx<T>(div(x, BLK), div(y, BLK), div(z, BLK), "anchor");
+  pe = new pszmem_cxx<T>(ERR_HISTO_LEN, 1, 1, "profiling errors");
   e = new pszmem_cxx<E>(x, y, z, "ectrl-lorenzo");
   etest = new pszmem_cxx<E>(x, y, z, "ectrl-lorenzo (test)");
 
@@ -88,6 +91,7 @@ TPL POOL::pszmempool_cxx(u4 x, int _radius, u4 y, u4 z)
 
   _compressed->control({Malloc, MallocHost});
   ac->control({Malloc, MallocHost});
+  pe->control({Malloc, MallocHost});
   e->control({Malloc, MallocHost});
   ht->control({Malloc, MallocHost});
 
@@ -108,6 +112,7 @@ TPL POOL *POOL::clear_buffer()
 {
   e->control({ClearDevice});
   ac->control({ClearDevice});
+  pe->control({ClearDevice});
   _compressed->control({ClearDevice});
 
   delete compact;

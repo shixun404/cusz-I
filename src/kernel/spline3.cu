@@ -17,6 +17,11 @@
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
 
+//#include "mem/memseg_cxx.hh"
+//#include "mem/memseg.h"
+//#include "mem/layout.h"
+//#include "mem/layout_cxx.hh"
+
 constexpr int DEFAULT_BLOCK_SIZE = 384;
 
 #define SETUP                                                   \
@@ -37,7 +42,7 @@ constexpr int DEFAULT_BLOCK_SIZE = 384;
 template <typename T, typename E, typename FP>
 int spline_construct(
     pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl,
-    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream)
+    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream, pszmem_cxx<T>* profiling_errors)
 {
   constexpr auto BLOCK = 8;
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
@@ -49,11 +54,26 @@ int spline_construct(
   auto grid_dim =
       dim3(div(l3.x, BLOCK * 4), div(l3.y, BLOCK), div(l3.z, BLOCK));
 
+
+  auto auto_tuning_grid_dim =
+      dim3(1, 1, 1);
+
+
+
   using Compact = typename CompactDram<PROPER_GPU_BACKEND, T>::Compact;
   auto ot = (Compact*)_outlier;
 
   CREATE_GPUEVENT_PAIR;
   START_GPUEVENT_RECORDING(stream);
+
+ if(intp_param.auto_tuning){
+   cusz::c_spline3d_profiling_16x16x16data<T*, DEFAULT_BLOCK_SIZE>  //
+        <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+            data->dptr(), data->template len3<dim3>(),
+            data->template st3<dim3>(),  //
+            profiling_errors->dptr());
+  }
+
 
   cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
@@ -62,7 +82,7 @@ int spline_construct(
           ectrl->dptr(), ectrl->template len3<dim3>(),
           ectrl->template st3<dim3>(),  //
           anchor->dptr(), anchor->template st3<dim3>(), ot->val(), ot->idx(),
-          ot->num(), eb_r, ebx2, radius, intp_param);
+          ot->num(), eb_r, ebx2, radius, intp_param,profiling_errors->dptr());
 
   STOP_GPUEVENT_RECORDING(stream);
   CHECK_GPU(GpuStreamSync(stream));
@@ -112,7 +132,7 @@ int spline_reconstruct(
 #define INIT(T, E)                                                            \
   template int spline_construct<T, E>(                                        \
       pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl,    \
-      void* _outlier, double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream); \
+      void* _outlier, double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream, pszmem_cxx<T> * profiling_errors); \
   template int spline_reconstruct<T, E>(                                      \
       pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata,   \
       double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream);

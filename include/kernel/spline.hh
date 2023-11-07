@@ -20,7 +20,7 @@
 template <typename T, typename E, typename FP = T>
 int spline_construct(
     pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* errctrl,
-    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream);
+    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream, pszmem_cxx<T>* profiling_errors);
 
 template <typename T, typename E, typename FP = T>
 int spline_reconstruct(
