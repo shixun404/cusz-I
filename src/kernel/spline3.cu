@@ -68,6 +68,7 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
 
  if(intp_param.auto_tuning){
+ /*
    double a1=2.0;
    double a2=1.75;
    double a3=1.5;
@@ -92,7 +93,7 @@ int spline_construct(
     intp_param.alpha=a5+(a4-a5)*(rel_eb-e5)/(e4-e5);
    else
     intp_param.alpha=a5;
-
+*/
    cusz::c_spline3d_profiling_16x16x16data<T*, DEFAULT_BLOCK_SIZE>  //
         <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
             data->dptr(), data->template len3<dim3>(),
