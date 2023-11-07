@@ -43,7 +43,7 @@ constexpr int DEFAULT_BLOCK_SIZE = 384;
 template <typename T, typename E, typename FP>
 int spline_construct(
     pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl,
-    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS &intp_param, float* time, void* stream, pszmem_cxx<T>* profiling_errors)
+    void* _outlier, double eb, double rel_eb, uint32_t radius, INTERPOLATION_PARAMS &intp_param, float* time, void* stream, pszmem_cxx<T>* profiling_errors)
 {
   constexpr auto BLOCK = 8;
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
