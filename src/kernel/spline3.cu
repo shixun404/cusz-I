@@ -17,13 +17,7 @@
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
 
-#if defined(PSZ_USE_CUDA)
-#include "mem/memseg_cxx/memseg_cxx.cu.hh"
-#elif defined(PSZ_USE_HIP)
-#include "mem/memseg_cxx/memseg_cxx.hip.hh"
-#elif defined(PSZ_USE_1API)
-#include "mem/memseg_cxx/memseg_cxx.dp.hh"
-#endif
+#include <cuda_runtime.h>
 //#include "mem/memseg_cxx.hh"
 //#include "mem/memseg.h"
 //#include "mem/layout.h"
@@ -81,7 +75,8 @@ int spline_construct(
             profiling_errors->dptr());
     profiling_errors->control({D2H});
     
-    auto errors=profiling_errors->hptr();
+    //auto errors=profiling_errors->hptr();
+    CHECK_GPU(cudaMemcpy(profiling_errors->h, profiling_errors->d, profiling_errors->bytes, cudaMemcpyDeviceToHost));
     printf("host %.4f %.4f\n",errors[0],errors[1]);
     bool do_reverse=(errors[1]>3*errors[0]);
     intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
