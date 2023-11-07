@@ -12,9 +12,9 @@
 #ifndef C00A17B2_29D2_47F0_B667_E6814586B4EB
 #define C00A17B2_29D2_47F0_B667_E6814586B4EB
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #include <stdint.h>
 
@@ -232,8 +232,8 @@ void pszmem_host_deepcopy_cuda(pszmem* dst, pszmem* src)
 // no impl. in C due to typing issue
 // void pszmem_cast(pszmem* dst, pszmem* src, psz_space s);
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif /* C00A17B2_29D2_47F0_B667_E6814586B4EB */
