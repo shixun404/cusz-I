@@ -17,8 +17,17 @@
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
 
+#if defined(PSZ_USE_CUDA)
 #include "mem/memseg_cxx/memseg_cxx.cu.hh"
-
+#elif defined(PSZ_USE_HIP)
+#include "mem/memseg_cxx/memseg_cxx.hip.hh"
+#elif defined(PSZ_USE_1API)
+#include "mem/memseg_cxx/memseg_cxx.dp.hh"
+#endif
+//#include "mem/memseg_cxx.hh"
+//#include "mem/memseg.h"
+//#include "mem/layout.h"
+//#include "mem/layout_cxx.hh"
 
 constexpr int DEFAULT_BLOCK_SIZE = 384;
 
