@@ -14,7 +14,7 @@
 #include "busyheader.hh"
 #include "mem/memseg.h"
 #include "utils/err.hh"
-
+/*
 void pszmem_malloc_cuda(pszmem* m)
 {
   if (m->d_borrowed)
@@ -151,3 +151,5 @@ void pszmem_host_deepcopy_cuda(pszmem* dst, pszmem* src)
 {
   CHECK_GPU(cudaMemcpy(dst->h, src->h, src->bytes, cudaMemcpyHostToHost));
 }
+
+*/
