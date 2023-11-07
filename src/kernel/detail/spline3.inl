@@ -1217,8 +1217,8 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     FP      eb_r,
     FP      ebx2,
     int     radius,
-    INTERPOLATION_PARAMS intp_param,
-    TITER errors
+    INTERPOLATION_PARAMS intp_param//,
+    //TITER errors
     )
 {
     // compile time variables
@@ -1241,10 +1241,12 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
       //intp_param.interpolators[2]=(errors[4]>errors[5]);
       
       //bool do_reverse=(errors[4+intp_param.interpolators[2]]>errors[intp_param.interpolators[0]]);
+        /*
         if(intp_param.auto_tuning){
             bool do_reverse=(errors[1]>3*errors[0]);
            intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
        }
+       */
     /*
        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0){
         printf("Errors: %.6f %.6f \n",errors[0],errors[1]);
