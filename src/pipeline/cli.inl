@@ -187,7 +187,7 @@ class CLI {
     pszlen decomp_len = pszlen{header->x, header->y, header->z, 1};
 
     psz_decompress_init(compressor, header);
-    compressor->header->intp_param = ctx->intp_param;
+    //compressor->header->intp_param = ctx->intp_param;
     
     psz_decompress(
         compressor, compressed->dptr(), psz_utils::filesize(header),
