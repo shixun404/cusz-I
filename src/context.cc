@@ -356,9 +356,7 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
       else if (optmatch({"-a", "--auto"})) {
         check_next();
         auto _ = std::stoi(argv[++i]);
-        std::cout<<"stoi "<<_<<std::endl;
         ctx->intp_param.auto_tuning = (uint8_t)_;
-         std::cout<<"cia "<<(int)ctx->intp_param.auto_tuning<<std::endl;
       }
 
       else if (optmatch({"--sycl-device"})) {
