@@ -42,7 +42,7 @@ constexpr int DEFAULT_BLOCK_SIZE = 384;
 template <typename T, typename E, typename FP>
 int spline_construct(
     pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl,
-    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream, pszmem_cxx<T>* profiling_errors)
+    void* _outlier, double eb, uint32_t radius, INTERPOLATION_PARAMS &intp_param, float* time, void* stream, pszmem_cxx<T>* profiling_errors)
 {
   constexpr auto BLOCK = 8;
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
@@ -72,6 +72,9 @@ int spline_construct(
             data->dptr(), data->template len3<dim3>(),
             data->template st3<dim3>(),  //
             profiling_errors->dptr());
+    auto errors=profiling_errors->hptr();
+    bool do_reverse=(errors[1]>3*errors[0]);
+    intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
   }
 
 
@@ -82,7 +85,7 @@ int spline_construct(
           ectrl->dptr(), ectrl->template len3<dim3>(),
           ectrl->template st3<dim3>(),  //
           anchor->dptr(), anchor->template st3<dim3>(), ot->val(), ot->idx(),
-          ot->num(), eb_r, ebx2, radius, intp_param,profiling_errors->dptr());
+          ot->num(), eb_r, ebx2, radius, intp_param);//,profiling_errors->dptr());
 
   STOP_GPUEVENT_RECORDING(stream);
   CHECK_GPU(GpuStreamSync(stream));
@@ -132,7 +135,7 @@ int spline_reconstruct(
 #define INIT(T, E)                                                            \
   template int spline_construct<T, E>(                                        \
       pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl,    \
-      void* _outlier, double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream, pszmem_cxx<T> * profiling_errors); \
+      void* _outlier, double eb, uint32_t radius, struct INTERPOLATION_PARAMS &intp_param, float* time, void* stream, pszmem_cxx<T> * profiling_errors); \
   template int spline_reconstruct<T, E>(                                      \
       pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata,   \
       double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream);
