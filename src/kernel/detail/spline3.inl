@@ -240,6 +240,7 @@ __device__ void c_reset_scratch_profiling_16x16x16data(volatile T s_data[16][16]
     }
 }
 
+template <typename T, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void c_reset_scratch_profiling_data_2(volatile T s_data[64], T nx[64][4], T ny[64][4], T nz[64][4],T default_value)
 {
     for (auto _tix = TIX; _tix < 64 * 4; _tix += LINEAR_BLOCK_SIZE) {
@@ -395,6 +396,7 @@ __device__ void global2shmem_profiling_16x16x16data(T1* data, DIM3 data_size, ST
     __syncthreads();
 }
 
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void global2shmem_profiling_data_2(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[64], volatile T2 s_nx[64][4], volatile T2 s_ny[64][4], volatile T2 s_nz[64][4])
 {
     constexpr auto TOTAL = 64 * 4;
