@@ -172,6 +172,9 @@ void pszctx_parse_control_string(
     else if (optmatch({"gpuverify"}) and is_enabled(v)) {
       ctx->use_gpu_verify = true;
     }
+    else if (optmatch({"auto_tuning"})) {
+      ctx->intp_param.auto_tuning = psz_helper::str2int(v);
+    }
     else if (optmatch({"alpha"})) {
       ctx->intp_param.alpha = psz_helper::str2fp(v);
     }
@@ -350,6 +353,12 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
         auto _ = std::string(argv[++i]);
         strcpy(ctx->original_file, _.c_str());
       }
+      else if (optmatch({"-a", "--auto"})) {
+        check_next();
+        auto _ = std::stoi(argv[++i]);
+        ctx->intp_param.auto_tuning = _;
+      }
+
       else if (optmatch({"--sycl-device"})) {
 #if defined(PSZ_USE_1API)
         check_next();

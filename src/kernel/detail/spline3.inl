@@ -1245,13 +1245,15 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
        // T cubic_errors=errors[0]+errors[2]+errors[4];
        // T linear_errors=errors[1]+errors[3]+errors[5];
      // bool do_cubic=(cubic_errors<=linear_errors);
-      intp_param.interpolators[0]=(errors[0]>errors[1]);
-      intp_param.interpolators[1]=(errors[2]>errors[3]);
-      intp_param.interpolators[2]=(errors[4]>errors[5]);
-      
-      bool do_reverse=(errors[4+intp_param.interpolators[2]]>3*errors[intp_param.interpolators[0]]);
-       // bool do_reverse=(errors[1]>2*errors[0]);
-       intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
+        if(intp_param.auto_tuning){
+          intp_param.interpolators[0]=(errors[0]>errors[1]);
+          intp_param.interpolators[1]=(errors[2]>errors[3]);
+          intp_param.interpolators[2]=(errors[4]>errors[5]);
+          
+          bool do_reverse=(errors[4+intp_param.interpolators[2]]>3*errors[intp_param.interpolators[0]]);
+           // bool do_reverse=(errors[1]>2*errors[0]);
+           intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
+       }
        /*
        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0){
         printf("Errors: %.6f %.6f %.6f %.6f %.6f %.6f \n",errors[0],errors[1],errors[2],errors[3],errors[4],errors[5]);
