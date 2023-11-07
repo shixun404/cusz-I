@@ -71,11 +71,13 @@ int spline_construct(
         <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
             data->dptr(), data->template len3<dim3>(),
             data->template st3<dim3>(),  //
-            profiling_errors->dptr());
+            profiling_errors->hptr());
+    
     auto errors=profiling_errors->hptr();
     std::cout<<errors[0]<<" "<<errors[1]<<std::endl;
     bool do_reverse=(errors[1]>3*errors[0]);
     intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
+    
   }
 
 
