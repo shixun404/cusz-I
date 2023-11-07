@@ -19,7 +19,11 @@ extern "C" {
 #include <stdint.h>
 
 #include "cusz/type.h"
+#include <cuda_runtime.h>
 
+#include "busyheader.hh"
+#include "mem/memseg.h"
+#include "utils/err.hh"
 typedef struct psz_memory_segment {
   char name[10];
   psz_dtype type;
