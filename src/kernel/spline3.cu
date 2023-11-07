@@ -68,6 +68,31 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
 
  if(intp_param.auto_tuning){
+   double a1=2.0;
+   double a2=1.75;
+   double a3=1.5;
+   double a4=1.25;
+   double a5=1;
+   double e1=1e-1;
+   double e2=1e-2;
+   double e3=1e-3;
+   double e4=1e-4;
+   double e5=1e-5;
+
+   intp_param.beta=4.0;
+   if(rel_eb>=e1)
+    intp_param.alpha=a1;
+   else if(rel_eb>=e2)
+    intp_param.alpha=a2+(a1-a2)*(rel_eb-e2)/(e1-e2);
+   else if(rel_eb>=e3)
+    intp_param.alpha=a3+(a2-a3)*(rel_eb-e3)/(e2-e3);
+   else if(rel_eb>=e4)
+    intp_param.alpha=a4+(a3-a4)*(rel_eb-e4)/(e3-e4);
+   else if(rel_eb>=e5)
+    intp_param.alpha=a5+(a4-a5)*(rel_eb-e5)/(e4-e5);
+   else
+    intp_param.alpha=a5;
+
    cusz::c_spline3d_profiling_16x16x16data<T*, DEFAULT_BLOCK_SIZE>  //
         <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
             data->dptr(), data->template len3<dim3>(),
@@ -77,7 +102,7 @@ int spline_construct(
     CHECK_GPU(cudaMemcpy(profiling_errors->m->h, profiling_errors->m->d, profiling_errors->m->bytes, cudaMemcpyDeviceToHost));
     auto errors=profiling_errors->hptr();
     
-    printf("host %.4f %.4f\n",errors[0],errors[1]);
+    //printf("host %.4f %.4f\n",errors[0],errors[1]);
     bool do_reverse=(errors[1]>3*errors[0]);
     intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
     
@@ -141,7 +166,7 @@ int spline_reconstruct(
 #define INIT(T, E)                                                            \
   template int spline_construct<T, E>(                                        \
       pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl,    \
-      void* _outlier, double eb, uint32_t radius, struct INTERPOLATION_PARAMS &intp_param, float* time, void* stream, pszmem_cxx<T> * profiling_errors); \
+      void* _outlier, double eb, double rel_eb, uint32_t radius, struct INTERPOLATION_PARAMS &intp_param, float* time, void* stream, pszmem_cxx<T> * profiling_errors); \
   template int spline_reconstruct<T, E>(                                      \
       pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata,   \
       double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time, void* stream);

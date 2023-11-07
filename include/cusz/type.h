@@ -203,7 +203,7 @@ typedef pszout* ptr_pszout;
 struct INTERPOLATION_PARAMS {
     // 
     double alpha{1.75};
-    double beta{3.0};
+    double beta{4.0};
     
     //
     bool interpolators[3];
