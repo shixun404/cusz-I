@@ -65,6 +65,7 @@ struct psz_context {
   psz_dtype dtype{F4};
   psz_mode mode{Rel};
   double eb{0.0};
+  double rel_eb{0.0};
   int dict_size{1024}, radius{512};
   int quant_bytewidth{2}, huff_bytewidth{4};
 

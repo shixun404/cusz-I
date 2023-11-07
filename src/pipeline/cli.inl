@@ -128,6 +128,7 @@ class CLI {
 
     // adjust eb
     if (ctx->mode == Rel) {
+      ctx->rel_eb=ctx->eb;
       double _1, _2, rng;
       input->extrema_scan(_1, _2, rng);
       ctx->eb *= rng;
