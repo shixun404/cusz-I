@@ -74,7 +74,7 @@ int spline_construct(
             profiling_errors->hptr());
     
     auto errors=profiling_errors->hptr();
-    std::cout<<errors[0]<<" "<<errors[1]<<std::endl;
+    printf("host %.4f %.4f",errors[0],errors[1]);
     bool do_reverse=(errors[1]>3*errors[0]);
     intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
     
