@@ -68,7 +68,7 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
 
  if(intp_param.auto_tuning){
- /*
+ 
    double a1=2.0;
    double a2=1.75;
    double a3=1.5;
@@ -93,19 +93,21 @@ int spline_construct(
     intp_param.alpha=a5+(a4-a5)*(rel_eb-e5)/(e4-e5);
    else
     intp_param.alpha=a5;
-*/
+
    cusz::c_spline3d_profiling_16x16x16data<T*, DEFAULT_BLOCK_SIZE>  //
         <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
             data->dptr(), data->template len3<dim3>(),
             data->template st3<dim3>(),  //
             profiling_errors->dptr());
    // profiling_errors->control({D2H});
+   /*
     CHECK_GPU(cudaMemcpy(profiling_errors->m->h, profiling_errors->m->d, profiling_errors->m->bytes, cudaMemcpyDeviceToHost));
     auto errors=profiling_errors->hptr();
     
     //printf("host %.4f %.4f\n",errors[0],errors[1]);
     bool do_reverse=(errors[1]>3*errors[0]);
     intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
+    */
     
   }
 
