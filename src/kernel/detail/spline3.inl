@@ -1197,7 +1197,7 @@ __global__ void cusz::c_spline3d_profiling_16x16x16data(
         cusz::device_api::auto_tuning<T,LINEAR_BLOCK_SIZE>(
             shmem.data, shmem.local_errs, data_size, errors);
         if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
-            printf("%.4f %.4f",errors[0],errors[1]);
+            printf("device %.4f %.4f",errors[0],errors[1]);
 
         
     }
