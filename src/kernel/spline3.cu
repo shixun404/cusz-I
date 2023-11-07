@@ -68,7 +68,7 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
 
  if(intp_param.auto_tuning>0){
-   std::cout<<"att "<<(int)intp_param.auto_tuning<<std::endl;
+   //std::cout<<"att "<<(int)intp_param.auto_tuning<<std::endl;
    double a1=2.0;
    double a2=1.75;
    double a3=1.5;
