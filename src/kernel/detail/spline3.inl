@@ -1189,13 +1189,15 @@ __global__ void cusz::c_spline3d_profiling_16x16x16data(
 
      
 
-        if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;//risky
+        //if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;//risky
 
         //__syncthreads();
        
 
         cusz::device_api::auto_tuning<T,LINEAR_BLOCK_SIZE>(
             shmem.data, shmem.local_errs, data_size, errors);
+        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+            print("%.4f %.4f",errors[0],errors[1]);
 
         
     }
