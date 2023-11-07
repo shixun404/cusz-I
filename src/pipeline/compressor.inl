@@ -103,7 +103,7 @@ COR::compress_predict(pszctx* ctx, T* in, void* stream)
 #ifdef PSZ_USE_CUDA
       mem->od->dptr(in);
       spline_construct(
-          mem->od, mem->ac, mem->e, (void*)mem->compact, eb, radius, ctx->intp_param,
+          mem->od, mem->ac, mem->e, (void*)mem->compact, eb, ctx->rel_eb,radius, ctx->intp_param,
           &time_pred, stream,mem->pe);
 #else
       throw runtime_error(
