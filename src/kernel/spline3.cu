@@ -17,10 +17,10 @@
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
 
-//#include "mem/memseg_cxx.hh"
-//#include "mem/memseg.h"
-//#include "mem/layout.h"
-//#include "mem/layout_cxx.hh"
+#include "mem/memseg_cxx.hh"
+#include "mem/memseg.h"
+#include "mem/layout.h"
+#include "mem/layout_cxx.hh"
 
 constexpr int DEFAULT_BLOCK_SIZE = 384;
 
