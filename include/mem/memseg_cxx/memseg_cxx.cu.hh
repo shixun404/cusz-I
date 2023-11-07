@@ -17,7 +17,7 @@
 #ifdef PSZ_USE_CUDA
 
 #include <cuda_runtime.h>
-
+#include "mem/memseg.h"
 template <typename Ctype>
 class pszmem_cxx {
  private:
