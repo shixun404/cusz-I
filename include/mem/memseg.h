@@ -49,7 +49,7 @@ void pszmem_clearhost(pszmem* m);
 void pszmem_fromfile(const char* fname, pszmem* m);
 void pszmem_tofile(const char* fname, pszmem* m);
 void pszmem_viewas(pszmem* backend, pszmem* frontend);
-
+/*
 void pszmem_malloc_cuda(pszmem* m);
 void pszmem_mallochost_cuda(pszmem* m);
 void pszmem_mallocmanaged_cuda(pszmem* m);
@@ -63,7 +63,7 @@ void pszmem_d2h_cuda(pszmem* m);
 void pszmem_d2h_cudaasync(pszmem* m, void* stream);
 void pszmem_device_deepcopy_cuda(pszmem* dst, pszmem* src);
 void pszmem_host_deepcopy_cuda(pszmem* dst, pszmem* src);
-
+*/
 void pszmem_malloc_hip(pszmem* m);
 void pszmem_mallochost_hip(pszmem* m);
 void pszmem_mallocmanaged_hip(pszmem* m);
