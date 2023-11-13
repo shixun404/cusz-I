@@ -17,7 +17,7 @@ target_compile_options(
   pszcompile_settings
   INTERFACE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda
             --expt-relaxed-constexpr -Wno-deprecated-declarations>)
-target_compile_features(pszcompile_settings INTERFACE cxx_std_14 cuda_std_14)
+target_compile_features(pszcompile_settings INTERFACE cxx_std_17 cuda_std_17)
 target_include_directories(
   pszcompile_settings
   INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>
@@ -68,7 +68,8 @@ add_library(
   src/kernel/dryrun.cu
   src/kernel/lproto.cu
   src/kernel/spvn.cu
-  src/kernel/l23.cu
+  src/kernel/l23_c.cu
+  src/kernel/l23_x.cu
   src/kernel/spline3.cu
   src/kernel/hist.cu
   src/kernel/hist.seq.cc # workaround
