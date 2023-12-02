@@ -210,7 +210,7 @@ struct INTERPOLATION_PARAMS {
     
     //
     bool reverse[3];
-    uint8_t auto_tuning{1};
+    uint8_t auto_tuning{2};
 
     //
     INTERPOLATION_PARAMS() : interpolators{false, false, false}, reverse{false, false, false} {};
