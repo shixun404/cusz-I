@@ -90,7 +90,7 @@ COR::compress_predict(pszctx* ctx, T* in, void* stream)
   auto const radius = ctx->radius;
   auto const pardeg = ctx->vle_pardeg;
   const auto booklen = radius * 2;
-  INTERPOLATION_PARAMS intp_param = ctx->intp_param;
+ // INTERPOLATION_PARAMS intp_param = ctx->intp_param;
   // [psz::note::TODO] compat layer or explicit macro
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
   auto len3 = dim3(ctx->x, ctx->y, ctx->z);
@@ -103,7 +103,7 @@ COR::compress_predict(pszctx* ctx, T* in, void* stream)
 #ifdef PSZ_USE_CUDA
       mem->od->dptr(in);
       spline_construct(
-          mem->od, mem->ac, mem->e, (void*)mem->compact, eb, radius, intp_param,
+          mem->od, mem->ac, mem->e, (void*)mem->compact, eb, ctx->rel_eb,radius, ctx->intp_param,
           &time_pred, stream,mem->pe);
 #else
       throw runtime_error(
@@ -185,6 +185,7 @@ COR::compress_update_header(pszctx* ctx, void* stream)
   header.splen = ctx->splen;
   header.pred_type = ctx->pred_type;
   header.dtype = PszType<T>::type;
+  header.intp_param=ctx->intp_param;
 
   // TODO no need to copy header to device
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)

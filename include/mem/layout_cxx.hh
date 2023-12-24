@@ -98,6 +98,14 @@ TPL POOL::pszmempool_cxx(u4 x, int _radius, u4 y, u4 z)
   // [psz::TODO] consider compact as a view with exposing the limited length
   compact->reserve_space(len / 5).control({Malloc, MallocHost});
 }
+/*
+void POOL::pesync_h2d(){
+  pe->control({H2D});
+}
+void POOL::pesync_d2d(){
+  pe->control({H2D});
+}
+*/
 
 TPL POOL::~pszmempool_cxx()
 {

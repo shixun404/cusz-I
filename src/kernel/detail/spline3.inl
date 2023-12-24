@@ -65,6 +65,12 @@ __global__ void c_spline3d_profiling_16x16x16data(
     STRIDE3 data_leap,
     TITER errors);
 
+template <typename TITER, int LINEAR_BLOCK_SIZE>
+__global__ void c_spline3d_profiling_data_2(
+    TITER   data,
+    DIM3    data_size,
+    STRIDE3 data_leap,
+    TITER errors);
 
 template <
     typename TITER,
@@ -119,6 +125,9 @@ namespace device_api {
 
     template <typename T,int  LINEAR_BLOCK_SIZE>
 __device__ void auto_tuning(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, volatile T* count);
+
+ template <typename T,int  LINEAR_BLOCK_SIZE>
+__device__ void auto_tuning_2(volatile T s_data[9][9][33],  volatile T local_errs[6], DIM3  data_size, volatile T* count);
 
 template <
     typename T1,
@@ -231,6 +240,20 @@ __device__ void c_reset_scratch_profiling_16x16x16data(volatile T s_data[16][16]
     }
 }
 
+template <typename T, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
+__device__ void c_reset_scratch_profiling_data_2(volatile T s_data[64], T nx[64][4], T ny[64][4], T nz[64][4],T default_value)
+{
+    for (auto _tix = TIX; _tix < 64 * 4; _tix += LINEAR_BLOCK_SIZE) {
+        auto x = (_tix % 4);
+        auto yz=_tix/4;
+
+        
+
+        nx[yz][x]=ny[yz][x]=nz[yz][x]=default_value;
+        s_data[TIX] = default_value;
+
+    }
+}
 
 template <typename T1, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void c_gather_anchor(T1* data, DIM3 data_size, STRIDE3 data_leap, T1* anchor, STRIDE3 anchor_leap)
@@ -373,6 +396,43 @@ __device__ void global2shmem_profiling_16x16x16data(T1* data, DIM3 data_size, ST
     __syncthreads();
 }
 
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
+__device__ void global2shmem_profiling_data_2(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[64], volatile T2 s_nx[64][4], volatile T2 s_ny[64][4], volatile T2 s_nz[64][4])
+{
+    constexpr auto TOTAL = 64 * 4;
+    int factors[4]={-3,-1,1,3};
+    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
+        auto offset   = (_tix % 4);
+        auto idx = _tix /4;
+        auto x = idx%4;
+        auto y   = (idx / 4) % 4;
+        auto z   = (idx / 4) / 4;
+        auto gx=(data_size.x/4)*x+data_size.x/8;
+        auto gy=(data_size.y/4)*y+data_size.y/8;
+        auto gz=(data_size.z/4)*z+data_size.z/8;
+
+        auto gid = gx + gy * data_leap.y + gz * data_leap.z;
+
+        if (gx>=3 and gy>=3 and gz>=3 and gx+3 < data_size.x and gy+3 < data_size.y and gz+3 < data_size.z) {
+            s_data[idx] = data[gid];
+            
+            auto factor=factors[offset];
+            s_nx[idx][offset]=data[gid+factor];
+            s_ny[idx][offset]=data[gid+factor*data_leap.y];
+            s_nz[idx][offset]=data[gid+factor*data_leap.z];
+           
+        }
+/*
+        if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
+            printf("g2s1084 %d %d %d %d %.2e %.2e \n",gx,gy,gz,gid,s_data[z][y][x],data[gid]);
+        }
+
+        if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==4 and z==8){
+            printf("g2s1048 %d %d %d %d %.2e %.2e \n",gx,gy,gz,gid,s_data[z][y][x],data[gid]);
+        }*/
+    }
+    __syncthreads();
+}
 
 template <typename T = float, typename E = u4, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void global2shmem_fuse(E* ectrl, dim3 ectrl_size, dim3 ectrl_leap, T* scattered_outlier, volatile T s_ectrl[9][9][33])
@@ -931,6 +991,71 @@ __device__ void cusz::device_api::auto_tuning(volatile T s_data[16][16][16],  vo
 }
 
 
+template <typename T,int  LINEAR_BLOCK_SIZE>
+__device__ void cusz::device_api::auto_tuning_2(volatile T s_data[64], volatile T s_nx[64][4], volatile T s_ny[64][4], volatile T s_nz[64][4],  volatile T local_errs[6], DIM3  data_size,  T * errs){
+ 
+    if(TIX<6)
+        local_errs[TIX]=0;
+    __syncthreads(); 
+
+    auto point_idx=TIX%64;
+    auto c=TIX/64;
+
+
+    bool predicate=  c<6;
+    // __shared__ T local_errs[6];
+
+    
+    if(predicate){
+
+       
+    
+        
+        T pred=0;
+
+        //auto unit = 1;
+        switch(c){
+                case 0:
+                    pred = (-s_nz[point_idx][0]+9*s_nz[point_idx][1] + 9*s_nz[point_idx][2]-s_nz[point_idx][3]) / 16;
+                    break;
+
+                case 1:
+                    pred = (-3*s_nz[point_idx][0]+23*s_nz[point_idx][1] + 23*s_nz[point_idx][2]-3*s_nz[point_idx][3]) / 40;
+                    break;
+                case 2:
+                    pred = (-s_ny[point_idx][0]+9*s_ny[point_idx][1] + 9*s_ny[point_idx][2]-s_ny[point_idx][3]) / 16;
+                    break;
+                case 3:
+                    pred = (-3*s_ny[point_idx][0]+23*s_ny[point_idx][1] + 23*s_ny[point_idx][2]-3*s_ny[point_idx][3]) / 40;
+                    break;
+
+                case 4:
+                    pred = (-s_nx[point_idx][0]+9*s_nx[point_idx][1] + 9*s_nx[point_idx][2]-s_nx[point_idx][3]) / 16;
+                    break;
+                case 5:
+                    pred = (-3*s_nx[point_idx][0]+23*s_nx[point_idx][1] + 23*s_nx[point_idx][2]-3*s_nx[point_idx][3]) / 40;
+                    break;
+
+
+
+                default:
+                break;
+            }
+        
+        T abs_error=fabs(pred-s_data[point_idx]);
+        atomicAdd(const_cast<T*>(local_errs) + c, abs_error);
+        
+
+    } 
+    __syncthreads(); 
+    if(TIX<6)
+        errs[TIX]=local_errs[TIX];
+    __syncthreads(); 
+       
+}
+
+
+
 template <typename T1, typename T2, typename FP,int LINEAR_BLOCK_SIZE, bool WORKFLOW, bool PROBE_PRED_ERROR>
 __device__ void cusz::device_api::spline3d_layout2_interpolate(
     volatile T1 s_data[9][9][33],
@@ -1189,17 +1314,66 @@ __global__ void cusz::c_spline3d_profiling_16x16x16data(
 
      
 
-        if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;//risky
+        //if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;//risky
 
         //__syncthreads();
        
 
         cusz::device_api::auto_tuning<T,LINEAR_BLOCK_SIZE>(
             shmem.data, shmem.local_errs, data_size, errors);
+        //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+        //    printf("device %.4f %.4f\n",errors[0],errors[1]);
 
         
     }
 }
+
+template <typename TITER, int LINEAR_BLOCK_SIZE>
+__global__ void cusz::c_spline3d_profiling_data_2(
+    TITER   data,
+    DIM3    data_size,
+    STRIDE3 data_leap,
+    TITER errors)
+{
+    // compile time variables
+    using T = typename std::remove_pointer<TITER>::type;
+ 
+
+    {
+        __shared__ struct {
+            T data[64];
+            T neighbor_x [64][4];
+            T neighbor_y [64][4];
+            T neighbor_z [64][4];
+            T local_errs[6];
+           // T global_errs[6];
+        } shmem;
+
+
+        c_reset_scratch_profiling_data_2<T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.neighbor_x, shmem.neighbor_y, shmem.neighbor_z,0.0);
+        //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+        //    printf("reset\n");
+        //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+        //    printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
+
+        global2shmem_profiling_data_2<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap,shmem.data, shmem.neighbor_x, shmem.neighbor_y, shmem.neighbor_z);
+
+
+
+     
+
+        if (TIX < 6 and BIX==0 and BIY==0 and BIZ==0) errors[TIX] = 0.0;//risky
+
+        //__syncthreads();
+       
+
+        cusz::device_api::auto_tuning_2<T,LINEAR_BLOCK_SIZE>(
+            shmem.data, shmem.neighbor_x, shmem.neighbor_y, shmem.neighbor_z, shmem.local_errs, data_size, errors);
+
+        
+    }
+}
+
 
 template <typename TITER, typename EITER, typename FP, int LINEAR_BLOCK_SIZE, typename CompactVal, typename CompactIdx, typename CompactNum>
 __global__ void cusz::c_spline3d_infprecis_32x8x8data(
@@ -1217,8 +1391,8 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     FP      eb_r,
     FP      ebx2,
     int     radius,
-    INTERPOLATION_PARAMS intp_param,
-    TITER errors
+    INTERPOLATION_PARAMS intp_param//,
+    //TITER errors
     )
 {
     // compile time variables
@@ -1241,10 +1415,12 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
       //intp_param.interpolators[2]=(errors[4]>errors[5]);
       
       //bool do_reverse=(errors[4+intp_param.interpolators[2]]>errors[intp_param.interpolators[0]]);
+        /*
         if(intp_param.auto_tuning){
             bool do_reverse=(errors[1]>3*errors[0]);
            intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
        }
+       */
     /*
        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0){
         printf("Errors: %.6f %.6f \n",errors[0],errors[1]);

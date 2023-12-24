@@ -203,14 +203,14 @@ typedef pszout* ptr_pszout;
 struct INTERPOLATION_PARAMS {
     // 
     double alpha{1.75};
-    double beta{3.0};
+    double beta{4.0};
     
     //
     bool interpolators[3];
     
     //
     bool reverse[3];
-    bool auto_tuning{true};
+    uint8_t auto_tuning{2};
 
     //
     INTERPOLATION_PARAMS() : interpolators{false, false, false}, reverse{false, false, false} {};

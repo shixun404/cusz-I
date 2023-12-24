@@ -17,7 +17,7 @@
 #ifdef PSZ_USE_CUDA
 
 #include <cuda_runtime.h>
-
+#include "mem/memseg.h"
 template <typename Ctype>
 class pszmem_cxx {
  private:
@@ -178,6 +178,7 @@ class pszmem_cxx {
     m->uni = uni, m->d_borrowed = m->h_borrowed = true;
     return this;
   }
+
 
   // getter
   size_t len() const { return m->len; }
