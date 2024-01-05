@@ -70,7 +70,7 @@ static const char psz_short_doc[] =
     "\n"
     "   ## using Lorenzo predictor for comparison\n"
     "   cuszi -t f32 -m r2r -e [ErrorBound] -i [/PATH/TO/DATA] -l [X]x[Y]x[Z] -z --report time -- predictor lorenzo\n"
-    "   cuszi -i [/PATH/TO/DATA].cusza -x --report time --compare [/PATH/TO/DATA]\n"
+    "   cuszi -i [/PATH/TO/DATA].cusza -x --report time --compare [/PATH/TO/DATA]\n";
 
 static const char psz_full_doc[] =
     "*NAME*\n"
