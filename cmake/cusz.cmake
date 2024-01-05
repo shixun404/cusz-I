@@ -134,7 +134,7 @@ target_link_libraries(cusz PUBLIC pszcomp_cu pszhf_cu pszspv_cu pszstat_seq
 
 add_executable(cusz-bin src/cli_psz.cc)
 target_link_libraries(cusz-bin PRIVATE cusz)
-set_target_properties(cusz-bin PROPERTIES OUTPUT_NAME cusz)
+set_target_properties(cusz-bin PROPERTIES OUTPUT_NAME cuszi)
 
 # enable examples and testing
 if(PSZ_BUILD_EXAMPLES)

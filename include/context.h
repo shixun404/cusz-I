@@ -46,7 +46,8 @@ struct psz_context {
 
   pszdevice device;
 
-  psz_predtype pred_type;
+  // TODO: (need fix) if no default is specified, empty 0 -> lorenzo
+  psz_predtype pred_type{Spline};
   char dbgstr_pred[10];
 
   // sizes

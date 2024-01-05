@@ -537,10 +537,11 @@ void pszctx_validate(pszctx* ctx)
 
 void pszctx_print_document(bool full_document)
 {
-  std::cout << "\n>>>>  cusz build: " << cusz::VERSION_TEXT << "\n";
+  std::cout << "\n>>>>  cuszi build: ICDE '24 artifacts\n";
 
   if (full_document)
-    std::cout << psz_helper::doc_format(psz_full_doc) << std::endl;
+    // std::cout << psz_helper::doc_format(psz_full_doc) << std::endl;
+    std::cout << "Full document is disabled temporarily." << std::endl;
   else
     std::cout << psz_short_doc << std::endl;
 }
