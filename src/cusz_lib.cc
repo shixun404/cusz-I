@@ -19,7 +19,7 @@
 #include "port.hh"
 #include "tehm.hh"
 
-pszpredictor pszdefault_predictor() { return {Lorenzo}; }
+pszpredictor pszdefault_predictor() { return {Spline}; }
 pszquantizer pszdefault_quantizer() { return {512}; }
 pszhfrc pszdefault_hfcoder() { return {Sword, Coarse, 1024, 768}; }
 pszframe* pszdefault_framework()
