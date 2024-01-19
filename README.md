@@ -27,21 +27,22 @@ build from source code
 
 ```bash
 # Example architectures (";" to separate multiple SM versions)
-# A100: 80, A4000: 86
+# "80" <- A100; "86" <- A4000; RTX 30 series
+# Please also refer to https://github.com/szcompressor/cuSZ/wiki/Build-and-Install for more detailed SM version listing
 # Install to [/path/to/install/dir]
 
-git clone https://github.com/szcompressor/cuSZ.git cusz-latest
-cd cusz-latest && mkdir build && cd build
+git clone https://github.com/Meso272/cusz-I.git cusz-interp
+cd cusz-interp && mkdir build && cd build
 
 cmake .. \
     -DPSZ_BACKEND=cuda \
     -DPSZ_BUILD_EXAMPLES=on \
-    -DCMAKE_CUDA_ARCHITECTURES="80;86" \
+    -DCMAKE_CUDA_ARCHITECTURES="70;80;86" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_COLOR_DIAGNOSTICS=on \
-    -DCMAKE_INSTALL_PREFIX=[/path/to/install/dir]
+#    -DCMAKE_INSTALL_PREFIX=[/path/to/install/dir]
 make -j
-make install
+# make install # uncomment `-DCMAKE_INSTALL_PREFIX=...` to install to system PATH
 # `ctest` to perform testing
 ```
 
