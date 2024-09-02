@@ -126,11 +126,6 @@ int spline_construct(
        // bool do_reverse=(errors[1]>2*errors[0]);
        intp_param.reverse[0]=intp_param.reverse[1]=intp_param.reverse[2]=do_reverse;
     }
-   
-   
-    
-    
-  
   }
 
 
