@@ -88,6 +88,8 @@ void thrustgpu_assess_quality(psz_summary* s, T* xdata, T* odata, size_t len)
   s->max_err.abs = max_abserr;
   s->max_err.rel = max_abserr / s->odata.rng;
   s->max_err.pwrrel = NAN;
+  printf("\ncompare.thrust.inl\n");
+  // assert(0);
 
   s->score.coeff = ee / std_odata / std_xdata;
   s->score.MSE = sum_err2 / len;

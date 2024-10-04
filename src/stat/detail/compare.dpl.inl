@@ -92,7 +92,8 @@ void dpl_assess_quality(psz_summary* s, T* xdata, T* odata, size_t len)
   s->max_err.abs = max_abserr;
   s->max_err.rel = max_abserr / s->odata.rng;
   s->max_err.pwrrel = NAN;
-
+      printf("\ncompare.dpl.inl\n");
+    // assert(0);
   s->score.coeff = ee / std_odata / std_xdata;
   s->score.MSE = sum_err2 / len;
   s->score.NRMSE = sqrt(s->score.MSE) / s->odata.rng;

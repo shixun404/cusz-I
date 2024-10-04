@@ -16,6 +16,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <stdio.h>
 #include <numeric>
 
 #include "cusz/type.h"
@@ -86,6 +87,8 @@ void cppstl_assess_quality(psz_summary* s, T* xdata, T* odata, size_t const len)
       max_pwrrel_abserr =
           max_pwrrel_abserr < rel_abserr ? rel_abserr : max_pwrrel_abserr;
     }
+    printf("\ncompare.stl.inl\n");
+    // assert(0);
     max_abserr_index = max_abserr < abserr ? i : max_abserr_index;
     max_abserr = max_abserr < abserr ? abserr : max_abserr;
     sum_corr += (odata[i] - mean_odata) * (xdata[i] - mean_xdata);

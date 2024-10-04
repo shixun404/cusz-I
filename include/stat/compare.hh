@@ -77,6 +77,7 @@ template <pszpolicy P, typename T>
 void assess_quality(pszsummary* s, T* xdata, T* odata, size_t const len)
 {
   // [TODO] THRUST is not activated in the frontend
+  printf("asdadsadsadasdas\n");
   if (P == SEQ)
     psz::cppstl_assess_quality(s, xdata, odata, len);
   else if (P == THRUST)

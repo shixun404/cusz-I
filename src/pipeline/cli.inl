@@ -22,6 +22,7 @@
 #include "dryrun.hh"
 #include "mem.hh"
 #include "tehm.hh"
+#include <assert.h>
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
 #include "utils/analyzer.hh"
 #endif
@@ -84,6 +85,7 @@ class CLI {
 
     psz_summary stat;
     psz::assess_quality<SEQ>(&stat, reconst->hptr(), original->hptr(), len);
+    assert(0);
     psz::print_metrics_cross<T>(&stat, 0, true);
 
     // destroy

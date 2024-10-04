@@ -44,10 +44,13 @@ void verify_data(psz_summary* s, T* xdata, T* odata, size_t len)
         min_xdata = min_xdata > xdata[i] ? xdata[i] : min_xdata;
 
         float abserr = fabs(xdata[i] - odata[i]);
+        // if(i < 10) printf("id=%d, %f, %f\n", i, xdata[i], odata[i]);
         if (odata[i] != 0) {
             rel_abserr        = abserr / fabs(odata[i]);
             max_pwrrel_abserr = max_pwrrel_abserr < rel_abserr ? rel_abserr : max_pwrrel_abserr;
         }
+            //   printf("\n verify.hh\n");
+    // assert(0);
         max_abserr_index = max_abserr < abserr ? i : max_abserr_index;
         max_abserr       = max_abserr < abserr ? abserr : max_abserr;
         sum_corr += (odata[i] - mean_odata) * (xdata[i] - mean_xdata);
