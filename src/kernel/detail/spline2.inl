@@ -72,7 +72,7 @@ template <
     typename TITER, typename EITER, typename FP = float,
     int AnchorBlockSizeX = 8, int AnchorBlockSizeY = 8,
     int AnchorBlockSizeZ = 1,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE,
@@ -88,7 +88,7 @@ template <
     typename EITER, typename TITER, typename FP = float,
     int AnchorBlockSizeX = 8, int AnchorBlockSizeY = 8,
     int AnchorBlockSizeZ = 1,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
@@ -122,7 +122,7 @@ __device__ void auto_tuning_2_2d(
 template <
     typename T1, typename T2, typename FP, int AnchorBlockSizeX = 8,
     int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE, bool WORKFLOW = SPLINE3_COMPR,
@@ -324,7 +324,7 @@ __device__ void c_gather_anchor(
 template <
     typename T1, typename T2 = T1, int AnchorBlockSizeX = 8,
     int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
@@ -358,8 +358,8 @@ __device__ void x_reset_scratch_data(
       s_xdata[z][y][x] = 0;
 
       auto ax = ((x / AnchorBlockSizeX) + BIX * numAnchorBlockX);
-      auto ay = ((y / AnchorBlockSizeY) + BIY);
-      auto az = ((z / AnchorBlockSizeZ) + BIZ);
+      auto ay = ((y / AnchorBlockSizeY) + BIY * numAnchorBlockY);
+      auto az = ((z / AnchorBlockSizeZ) + BIZ * numAnchorBlockZ);
 
       if (ax < anchor_size.x and ay < anchor_size.y and az < anchor_size.z)
         s_xdata[z][y][x] =
@@ -376,7 +376,7 @@ __device__ void x_reset_scratch_data(
 template <
     typename T1, typename T2, int AnchorBlockSizeX = 8,
     int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
@@ -478,7 +478,7 @@ __device__ void global2shmem_profiling_data_2(
 template <
     typename T = float, typename E = u4, int AnchorBlockSizeX = 8,
     int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
@@ -513,7 +513,7 @@ __device__ void global2shmem_fuse(
 template <
     typename T1, typename T2, int AnchorBlockSizeX = 8,
     int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
@@ -549,7 +549,7 @@ __device__ void shmem2global_data(
 template <
     typename T1, typename T2, int AnchorBlockSizeX = 8,
     int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
-    int numAnchorBlockX = 1,  // Number of Anchor blocks along X
+    int numAnchorBlockX = 4,  // Number of Anchor blocks along X
     int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
     int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
@@ -613,9 +613,9 @@ __forceinline__ __device__ void interpolate_stage(
     DIM3 data_size, LAMBDAX xmap, LAMBDAY ymap, LAMBDAZ zmap, int unit,
     FP eb_r, FP ebx2, int radius, bool interpolator)
 {
-  static_assert(
-      BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= 384,
-      "block oversized");
+  // static_assert(
+  //     BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= 384,
+  //     "block oversized");
   static_assert((BLUE or YELLOW or HOLLOW) == true, "must be one hot");
   static_assert((BLUE and YELLOW) == false, "must be only one hot (1)");
   static_assert((BLUE and YELLOW) == false, "must be only one hot (2)");
@@ -969,7 +969,7 @@ __forceinline__ __device__ void interpolate_stage(
       }
     }
   };
-  if CONSTEXPR (COARSEN) {
+  // if CONSTEXPR (COARSEN) {
     constexpr auto TOTAL = BLOCK_DIMX * BLOCK_DIMY;
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
       auto itix = (_tix % BLOCK_DIMX);
@@ -980,16 +980,16 @@ __forceinline__ __device__ void interpolate_stage(
       auto z = zmap(itiz, unit);
       run(x, y, z);
     }
-  }
-  else {
-    auto itix = (TIX % BLOCK_DIMX);
-    auto itiy = (TIX / BLOCK_DIMX) % BLOCK_DIMY;
-    auto itiz = (TIX / BLOCK_DIMX) / BLOCK_DIMY;
-    auto x = xmap(itix, unit);
-    auto y = ymap(itiy, unit);
-    auto z = zmap(itiz, unit);
-    run(x, y, z);
-  }
+  // }
+  // else {
+  //   auto itix = (TIX % BLOCK_DIMX);
+  //   auto itiy = (TIX / BLOCK_DIMX) % BLOCK_DIMY;
+  //   auto itiz = (TIX / BLOCK_DIMX) / BLOCK_DIMY;
+  //   auto x = xmap(itix, unit);
+  //   auto y = ymap(itiy, unit);
+  //   auto z = zmap(itiz, unit);
+  //   run(x, y, z);
+  // }
   __syncthreads();
 }
 
@@ -1191,8 +1191,9 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
       cur_eb_r = eb_r * intp_param.beta;
     }
   };
-
-  int unit = 4;
+  
+   if constexpr (AnchorBlockSizeX == 32){
+  int unit = 16;
   calc_eb(unit);
   // set_orders(reverse[2]);
   if (intp_param.reverse[2]) {
@@ -1204,7 +1205,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xhollow_reverse), decltype(yhollow_reverse),
         decltype(zhollow_reverse),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 1, 2, NO_COARSEN, 1,
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX, numAnchorBlockY + 1, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
         zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
@@ -1216,7 +1217,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xyellow_reverse), decltype(yyellow_reverse),
         decltype(zyellow_reverse),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 3, 1, NO_COARSEN, 1,
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2 + 1, numAnchorBlockY, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
         zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
@@ -1229,7 +1230,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockY,  // Number of Anchor blocks along Y
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 2, 1, NO_COARSEN, 1,
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX + 1, numAnchorBlockY, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
         cur_ebx2, radius, intp_param.interpolators[0]);
@@ -1239,19 +1240,12 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockY,  // Number of Anchor blocks along Y
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 1, 3, NO_COARSEN, 3,
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX, numAnchorBlockY * 2 + 1, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
         cur_ebx2, radius, intp_param.interpolators[1]);
-    // interpolate_stage<
-    //     T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),
-    //     // false, false, true, LINEAR_BLOCK_SIZE, 4, 3, NO_COARSEN, 3,
-    //     BORDER_INCLUSIVE, WORKFLOW>( s_data, s_ectrl,data_size, xhollow,
-    //     yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,
-    //     intp_param.interpolators[2]);
   }
-
-  unit = 2;
+    unit = 8;
   calc_eb(unit);
 
   // iteration 2, TODO switch y-z order
@@ -1263,7 +1257,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xhollow_reverse), decltype(yhollow_reverse),
         decltype(zhollow_reverse),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 2, 3, NO_COARSEN, 1,
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY * 2 + 1, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
         zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
@@ -1275,7 +1269,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xyellow_reverse), decltype(yyellow_reverse),
         decltype(zyellow_reverse),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 5, 2, NO_COARSEN, 1,
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4 + 1, numAnchorBlockY * 2, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
         zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
@@ -1288,7 +1282,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockY,  // Number of Anchor blocks along Y
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 3, 2, NO_COARSEN, 1,
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2 + 1, numAnchorBlockY * 2, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
         cur_ebx2, radius, intp_param.interpolators[0]);
@@ -1299,33 +1293,17 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xhollow), decltype(yhollow),
         decltype(zhollow),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 2, 5, NO_COARSEN, 1,
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY * 4 + 1, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
         cur_ebx2, radius, intp_param.interpolators[1]);
-    // interpolate_stage<
-    //     T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),
-    //     // false, false, true, LINEAR_BLOCK_SIZE, 8, 5, NO_COARSEN, 5,
-    //     BORDER_INCLUSIVE, WORKFLOW>( s_data, s_ectrl,data_size, xhollow,
-    //     yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,
-    //     intp_param.interpolators[2]);
   }
-  // if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
-  // printf("lv2\n");
-  unit = 1;
+  
+  unit = 4;
   calc_eb(unit);
-  // set_orders(reverse[0]);
 
   // iteration 3
   if (intp_param.reverse[0]) {
-    // may have bug
-    //  interpolate_stage<
-    //      T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse),
-    //      decltype(zhollow_reverse),  // false, false, true,
-    //      LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
-    //      s_data, s_ectrl,data_size, xhollow_reverse, yhollow_reverse,
-    //      zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
-    //      intp_param.interpolators[0]);
     interpolate_stage<
         T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
         numAnchorBlockX,  // Number of Anchor blocks along X
@@ -1333,7 +1311,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xhollow_reverse), decltype(yhollow_reverse),
         decltype(zhollow_reverse),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 4, 5, NO_COARSEN, 1,
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4, numAnchorBlockY * 4 + 1, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
         zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
@@ -1345,7 +1323,119 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xyellow_reverse), decltype(yyellow_reverse),
         decltype(zyellow_reverse),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 9, 4, NO_COARSEN, 1,
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8 + 1, numAnchorBlockY * 4, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+
+    // may have bug end
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4 + 1, numAnchorBlockY * 4, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow),
+        decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4, numAnchorBlockY * 8 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+
+  unit = 2;
+  calc_eb(unit);
+
+  // iteration 3
+  if (intp_param.reverse[0]) {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8, numAnchorBlockY * 8 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 16 + 1, numAnchorBlockY * 8, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+
+    // may have bug end
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8 + 1, numAnchorBlockY * 8, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow),
+        decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8, numAnchorBlockY * 16 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+
+  unit = 1;
+  calc_eb(unit);
+
+  // iteration 3
+  if (intp_param.reverse[0]) {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 16, numAnchorBlockY * 16 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 32 + 1, numAnchorBlockY * 16, NO_COARSEN, 1,
         BORDER_EXCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
         zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
@@ -1360,7 +1450,7 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockY,  // Number of Anchor blocks along Y
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 5, 4, NO_COARSEN, 1,
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 16 + 1, numAnchorBlockY * 16, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
         cur_ebx2, radius, intp_param.interpolators[0]);
@@ -1371,18 +1461,396 @@ __device__ void cusz::device_api::spline2d_layout2_interpolate(
         numAnchorBlockZ,  // Number of Anchor blocks along Z
         decltype(xhollow), decltype(yhollow),
         decltype(zhollow),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 4, 9, NO_COARSEN, 1,
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 16, numAnchorBlockY * 32 + 1, NO_COARSEN, 1,
+        BORDER_EXCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+   }
+
+   if constexpr (AnchorBlockSizeX == 16){
+  int unit = 8;
+  calc_eb(unit);
+  // set_orders(reverse[2]);
+  if (intp_param.reverse[2]) {
+
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX, numAnchorBlockY + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2 + 1, numAnchorBlockY, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX, numAnchorBlockY * 2 + 1, NO_COARSEN, 1,
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
         cur_ebx2, radius, intp_param.interpolators[1]);
-
-    // interpolate_stage<
-    //     T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),
-    //     // false, false, true, LINEAR_BLOCK_SIZE, 16, 9, COARSEN, 9,
-    //     BORDER_EXCLUSIVE, WORKFLOW>( s_data, s_ectrl,data_size, xhollow,
-    //     yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,
-    //     intp_param.interpolators[2]);
   }
+  unit = 4;
+  calc_eb(unit);
+
+  // iteration 2, TODO switch y-z order
+  if (intp_param.reverse[1]) {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY * 2 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4 + 1, numAnchorBlockY * 2, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2 + 1, numAnchorBlockY * 2, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow),
+        decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY * 4 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+  
+  unit = 2;
+  calc_eb(unit);
+
+  // iteration 3
+  if (intp_param.reverse[0]) {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4, numAnchorBlockY * 4 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8 + 1, numAnchorBlockY * 4, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+
+    // may have bug end
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4 + 1, numAnchorBlockY * 4, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow),
+        decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4, numAnchorBlockY * 8 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+
+  unit = 1;
+  calc_eb(unit);
+
+  // iteration 3
+  if (intp_param.reverse[0]) {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8, numAnchorBlockY * 8 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 16 + 1, numAnchorBlockY * 8, NO_COARSEN, 1,
+        BORDER_EXCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+
+    // may have bug end
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8 + 1, numAnchorBlockY * 8, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow),
+        decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8, numAnchorBlockY * 16 + 1, NO_COARSEN, 1,
+        BORDER_EXCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+  }
+
+ if constexpr (AnchorBlockSizeX == 8){
+  int unit = 4;
+  calc_eb(unit);
+  // set_orders(reverse[2]);
+  if (intp_param.reverse[2]) {
+
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX, numAnchorBlockY + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2 + 1, numAnchorBlockY, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX, numAnchorBlockY * 2 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+  unit = 2;
+  calc_eb(unit);
+
+  // iteration 2, TODO switch y-z order
+  if (intp_param.reverse[1]) {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY * 2 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4 + 1, numAnchorBlockY * 2, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2 + 1, numAnchorBlockY * 2, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow),
+        decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 2, numAnchorBlockY * 4 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+  
+  unit = 1;
+  calc_eb(unit);
+
+  // iteration 3
+  if (intp_param.reverse[0]) {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow_reverse), decltype(yhollow_reverse),
+        decltype(zhollow_reverse),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4, numAnchorBlockY * 4 + 1, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
+        zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[1]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow_reverse), decltype(yyellow_reverse),
+        decltype(zyellow_reverse),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 8 + 1, numAnchorBlockY * 4, NO_COARSEN, 1,
+        BORDER_EXCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
+        zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+        intp_param.interpolators[2]);
+
+    // may have bug end
+  }
+  else {
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+        false, true, false, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4 + 1, numAnchorBlockY * 4, NO_COARSEN, 1,
+        BORDER_INCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xyellow, yyellow, zyellow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[0]);
+    interpolate_stage<
+        T1, T2, FP, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+        numAnchorBlockX,  // Number of Anchor blocks along X
+        numAnchorBlockY,  // Number of Anchor blocks along Y
+        numAnchorBlockZ,  // Number of Anchor blocks along Z
+        decltype(xhollow), decltype(yhollow),
+        decltype(zhollow),  //
+        false, false, true, LINEAR_BLOCK_SIZE, numAnchorBlockX * 4, numAnchorBlockY * 8 + 1, NO_COARSEN, 1,
+        BORDER_EXCLUSIVE, WORKFLOW>(
+        s_data, s_ectrl, data_size, xhollow, yhollow, zhollow, unit, cur_eb_r,
+        cur_ebx2, radius, intp_param.interpolators[1]);
+  }
+ }
 }
 
 /********************************************************************************

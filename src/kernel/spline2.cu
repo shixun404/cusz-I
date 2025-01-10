@@ -22,8 +22,8 @@
 // #include "mem/memseg.h"
 // #include "mem/layout.h"
 // #include "mem/layout_cxx.hh"
-#define AnchorBlockSizeX 8
-#define AnchorBlockSizeY 8
+#define AnchorBlockSizeX 32
+#define AnchorBlockSizeY 32
 #define AnchorBlockSizeZ 1
 #define numAnchorBlockX 1  // Number of Anchor blocks along X
 #define numAnchorBlockY 1  // Number of Anchor blocks along Y
@@ -77,11 +77,11 @@ int spline_construct(
   // assert(0);
   if(intp_param.auto_tuning>0){
    //std::cout<<"att "<<(int)intp_param.auto_tuning<<std::endl;
-   double a1=2.0;
-   double a2=1.75;
-   double a3=1.5;
-   double a4=1.25;
-   double a5=1;
+   double a1=2.0 + 1;
+   double a2=1.75 + 1;
+   double a3=1.5 + 1;
+   double a4=1.25 + 1;
+   double a5=1 + 1;
    double e1=1e-1;
    double e2=1e-2;
    double e3=1e-3;
