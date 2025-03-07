@@ -335,73 +335,9 @@
    __syncthreads();
  }
  
- template <
-     typename T1, typename T2,
-     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
- __device__ void global2shmem_profiling_16x16x16data(
-     T1* data, DIM3 data_size, STRIDE3 data_leap,
-     volatile T2 s_data[16][16][16])
- {
-   constexpr auto TOTAL = 16 * 16 * 16;
- 
-   for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-     auto x = (_tix % 16);
-     auto y = (_tix / 16) % 16;
-     auto z = (_tix / 16) / 16;
-     auto gx_1 = x / 4;
-     auto gx_2 = x % 4;
-     auto gy_1 = y / 4;
-     auto gy_2 = y % 4;
-     auto gz_1 = z / 4;
-     auto gz_2 = z % 4;
-     auto gx = (data_size.x / 4) * gx_1 + gx_2;
-     auto gy = (data_size.y / 4) * gy_1 + gy_2;
-     auto gz = (data_size.z / 4) * gz_1 + gz_2;
- 
-     auto gid = gx + gy * data_leap.y + gz * data_leap.z;
- 
-     if (gx < data_size.x and gy < data_size.y and gz < data_size.z)
-       s_data[z][y][x] = data[gid];
-   }
-   __syncthreads();
- }
  
  template <
-     typename T1, typename T2,
-     int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
- __device__ void global2shmem_profiling_data_2(
-     T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[64],
-     volatile T2 s_nx[64][4], volatile T2 s_ny[64][4], volatile T2 s_nz[64][4])
- {
-   constexpr auto TOTAL = 64 * 4;
-   int factors[4] = {-3, -1, 1, 3};
-   for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-     auto offset = (_tix % 4);
-     auto idx = _tix / 4;
-     auto x = idx % 4;
-     auto y = (idx / 4) % 4;
-     auto z = (idx / 4) / 4;
-     auto gx = (data_size.x / 4) * x + data_size.x / 8;
-     auto gy = (data_size.y / 4) * y + data_size.y / 8;
-     auto gz = (data_size.z / 4) * z + data_size.z / 8;
- 
-     auto gid = gx + gy * data_leap.y + gz * data_leap.z;
- 
-     if (gx >= 3 and gy >= 3 and gz >= 3 and gx + 3 < data_size.x and
-         gy + 3 < data_size.y and gz + 3 < data_size.z) {
-       s_data[idx] = data[gid];
- 
-       auto factor = factors[offset];
-       s_nx[idx][offset] = data[gid + factor];
-       s_ny[idx][offset] = data[gid + factor * data_leap.y];
-       s_nz[idx][offset] = data[gid + factor * data_leap.z];
-     }
-   }
-   __syncthreads();
- }
- 
- template <
-     typename T = float, typename E = u4, int AnchorBlockSizeX = 8,
+     typename T = float, typename E = u4, int SPLINE_DIM = 2, int AnchorBlockSizeX = 8,
      int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
      int numAnchorBlockX = 4,  // Number of Anchor blocks along X
      int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
@@ -409,23 +345,24 @@
      int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
  __device__ void global2shmem_fuse(
      E* ectrl, dim3 ectrl_size, dim3 ectrl_leap, T* scattered_outlier,
-     volatile T s_ectrl[1]
-                       [AnchorBlockSizeY * numAnchorBlockY + 1]
-                       [AnchorBlockSizeX * numAnchorBlockX + 1])
+     volatile T s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+                       [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
+                       [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)])
  {
-   constexpr auto TOTAL = (AnchorBlockSizeX * numAnchorBlockX + 1) *
-                          (AnchorBlockSizeY * numAnchorBlockY + 1);
+   constexpr auto TOTAL = (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) *
+                          (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2));
+                          (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3));
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-     auto x = (_tix % (AnchorBlockSizeX * numAnchorBlockX + 1));
-     auto y = (_tix / (AnchorBlockSizeX * numAnchorBlockX + 1)) %
-              (AnchorBlockSizeY * numAnchorBlockY + 1);
-     auto z = (_tix / (AnchorBlockSizeX * numAnchorBlockX + 1)) /
-              (AnchorBlockSizeY * numAnchorBlockY + 1);
+     auto x = (_tix % (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)));
+     auto y = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 3))) %
+              (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2));
+     auto z = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1))) /
+              (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2));
      auto gx = (x + BIX * (AnchorBlockSizeX * numAnchorBlockX));
      auto gy = (y + BIY * (AnchorBlockSizeY * numAnchorBlockY));
      auto gz = (z + BIZ * (AnchorBlockSizeZ * numAnchorBlockZ));
-     // if(TIX + TIY + TIZ == 0 && BIX + BIY + BIZ == 0) printf(" ectrl_leap=%d %d %d\n",  ectrl_leap.x,  ectrl_leap.y,  ectrl_leap.z);
+     
      auto gid = gx + gy * ectrl_leap.y + gz * ectrl_leap.z;
  
      if (gx < ectrl_size.x and gy < ectrl_size.y and gz < ectrl_size.z)
@@ -436,23 +373,22 @@
  
  // dram_outlier should be the same in type with shared memory buf
  template <
-     typename T1, typename T2, int AnchorBlockSizeX = 8,
+     typename T1, typename T2, int SPLINE_DIM = 2, int AnchorBlockSizeX = 8,
      int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
      int numAnchorBlockX = 4,  // Number of Anchor blocks along X
      int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
      int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
      int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
  __device__ void shmem2global_data(
-     volatile T1 s_buf[1]
-                      [AnchorBlockSizeY * numAnchorBlockY + 1]
-                      [AnchorBlockSizeX * numAnchorBlockX + 1],
+     volatile T1 s_buf[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+                      [AnchorBlockSizeY * numAnchorBlockY +  + (SPLINE_DIM >= 2)]
+                      [AnchorBlockSizeX * numAnchorBlockX +  + (SPLINE_DIM >= 1)],
      T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap)
  {
    auto x_size = AnchorBlockSizeX * numAnchorBlockX + (BIX == GDX - 1);
    auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1);
    auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1);
-   // constexpr auto TOTAL = 32 * 8 * 8;
-   auto TOTAL = x_size * y_size;
+   auto TOTAL = x_size * y_size * z_size;
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
      auto x = (_tix % x_size);
@@ -472,16 +408,16 @@
  
  // dram_outlier should be the same in type with shared memory buf
  template <
-     typename T1, typename T2, int AnchorBlockSizeX = 8,
+     typename T1, typename T2, int SPLINE_DIM = 2, int AnchorBlockSizeX = 8,
      int AnchorBlockSizeY = 8, int AnchorBlockSizeZ = 8,
      int numAnchorBlockX = 4,  // Number of Anchor blocks along X
      int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
      int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
      int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
  __device__ void shmem2global_data_with_compaction(
-     volatile T1 s_buf[1]
-                      [AnchorBlockSizeY * numAnchorBlockY + 1]
-                      [AnchorBlockSizeX * numAnchorBlockX + 1],
+     volatile T1 s_buf[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+                      [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
+                      [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
      T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap, int radius,
      T1* dram_compactval = nullptr, uint32_t* dram_compactidx = nullptr,
      uint32_t* dram_compactnum = nullptr)
@@ -489,7 +425,7 @@
    auto x_size = AnchorBlockSizeX * numAnchorBlockX + (BIX == GDX - 1);
    auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1);
    auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1);
-   auto TOTAL = x_size * y_size;
+   auto TOTAL = x_size * y_size * z_size;
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
      auto x = (_tix % x_size);
@@ -519,7 +455,7 @@
  }
  
  template <
-     typename T1, typename T2, typename FP, int AnchorBlockSizeX,
+     typename T1, typename T2, typename FP, int SPLINE_DIM, int AnchorBlockSizeX,
      int AnchorBlockSizeY, int AnchorBlockSizeZ,
      int numAnchorBlockX,  // Number of Anchor blocks along X
      int numAnchorBlockY,  // Number of Anchor blocks along Y
@@ -529,12 +465,12 @@
      int BLOCK_DIMY, bool COARSEN, int BLOCK_DIMZ, bool BORDER_INCLUSIVE,
      bool WORKFLOW>
  __forceinline__ __device__ void interpolate_stage(
-     volatile T1 s_data[1]
-                       [AnchorBlockSizeY * numAnchorBlockY + 1]
-                       [AnchorBlockSizeX * numAnchorBlockX + 1],
-     volatile T2 s_ectrl[1]
-                        [AnchorBlockSizeY * numAnchorBlockY + 1]
-                        [AnchorBlockSizeX * numAnchorBlockX + 1],
+     volatile T1 s_data[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+                       [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
+                       [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
+     volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+                        [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
+                        [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
      DIM3 data_size, LAMBDAX xmap, LAMBDAY ymap, LAMBDAZ zmap, int unit,
      FP eb_r, FP ebx2, int radius, bool interpolator)
  {
