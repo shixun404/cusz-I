@@ -70,7 +70,7 @@ add_library(
   src/kernel/spvn.cu
   src/kernel/l23_c.cu
   src/kernel/l23_x.cu
-  src/kernel/spline3.cu
+  src/kernel/spline.cu
   src/kernel/hist.cu
   src/kernel/hist.seq.cc # workaround
   src/kernel/histsp.cu
