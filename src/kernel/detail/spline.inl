@@ -60,14 +60,6 @@
  /********************************************************************************
   * host API
   ********************************************************************************/
- template <typename TITER, int SPLINE_DIM, int PROFILING_X, 
-            int PROFILING_Y, int PROFILING_Z, int LINEAR_BLOCK_SIZE>
- __global__ void c_spline_profiling_data(
-     TITER data, DIM3 data_size, STRIDE3 data_leap, TITER errors);
- 
- template <typename TITER, int SPLINE_DIM, int LINEAR_BLOCK_SIZE>
- __global__ void c_spline_profiling_data_2(
-     TITER data, DIM3 data_size, STRIDE3 data_leap, TITER errors);
  
  template <
      typename TITER, typename EITER, typename FP = float,
@@ -111,16 +103,6 @@
  /********************************************************************************
   * device API
   ********************************************************************************/
- 
- template <typename T, int LINEAR_BLOCK_SIZE>
- __device__ void auto_tuning_2d(
-     volatile T s_data[9][9][33], volatile T local_errs[6], DIM3 data_size,
-     volatile T* count);
- 
- template <typename T, int LINEAR_BLOCK_SIZE>
- __device__ void auto_tuning_2_2d(
-     volatile T s_data[9][9][33], volatile T local_errs[6], DIM3 data_size,
-     volatile T* count);
  
  template <
      typename T1, typename T2, typename FP, int SPLINE_DIM = 2, int AnchorBlockSizeX = 8,
