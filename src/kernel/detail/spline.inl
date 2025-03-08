@@ -921,8 +921,8 @@
    };
    
 
-    int max_unit = AnchorBlockSizeX >= AnchorBlockSizeY ? AnchorBlockSizeX : AnchorBlockSizeY;
-    max_unit = max_unit >= AnchorBlockSizeZ ? max_unit : AnchorBlockSizeZ;
+    int max_unit = ((AnchorBlockSizeX >= AnchorBlockSizeY) ? AnchorBlockSizeX : AnchorBlockSizeY);
+    max_unit = ((max_unit >= AnchorBlockSizeZ) ? max_unit : AnchorBlockSizeZ);
     max_unit /= 2;
     int unit_x = AnchorBlockSizeX, unit_y = AnchorBlockSizeY, unit_z = AnchorBlockSizeZ;
     
