@@ -451,6 +451,7 @@
                         [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
                         [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
      DIM3 data_size, LAMBDAX xmap, LAMBDAY ymap, LAMBDAZ zmap, int unit,
+     int unit_x, int unit_y, int unit_z,
      FP eb_r, FP ebx2, int radius, bool interpolator, int BLOCK_DIMX,
      int BLOCK_DIMY, bool COARSEN, int BLOCK_DIMZ)
  {
@@ -941,7 +942,7 @@
          false, false, true, LINEAR_BLOCK_SIZE,
          BORDER_INCLUSIVE, WORKFLOW>(
          s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
-         zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+         zhollow_reverse, unit, unit_x / 2, unit_y / 2, unit_z / 2, cur_eb_r, cur_ebx2, radius,
          intp_param.interpolators[0], numAnchorBlockX * AnchorBlockSizeX / unit_x, numAnchorBlockY * AnchorBlockSizeY / unit_y + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
          unit_x /= 2;
       }
@@ -956,7 +957,7 @@
          false, true, false, LINEAR_BLOCK_SIZE,
          BORDER_INCLUSIVE, WORKFLOW>(
          s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
-         zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
+         zyellow_reverse, unit, unit_x, unit_y / 2, unit_z / 2, unit_y / 2, unit_z / 2,  cur_eb_r, cur_ebx2, radius,
          intp_param.interpolators[1], numAnchorBlockX * AnchorBlockSizeX / unit_x + (SPLINE_DIM >= 1), numAnchorBlockY * AnchorBlockSizeY / unit_y, NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
           unit_y /= 2;
         }
