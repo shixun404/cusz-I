@@ -925,6 +925,8 @@
     max_unit = max_unit >= AnchorBlockSizeZ ? max_unit : AnchorBlockSizeZ;
     max_unit /= 2;
     int unit_x = AnchorBlockSizeX, unit_y = AnchorBlockSizeY, unit_z = AnchorBlockSizeZ;
+    
+    #pragma unroll
     for(int unit = max_unit; unit >= 1; unit /= 2){
       // if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("unit=%d\n", unit);
       calc_eb(unit);
@@ -1034,7 +1036,7 @@
          numAnchorBlockZ,  // Number of Anchor blocks along Z
          LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
          shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
-         if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("Finish spline layout interpolate, start shmem2global_data_with_compaction\n");
+        //  if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("Finish spline layout interpolate, start shmem2global_data_with_compaction\n");
      shmem2global_data_with_compaction<
          T, E, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
          numAnchorBlockX,  // Number of Anchor blocks along X
