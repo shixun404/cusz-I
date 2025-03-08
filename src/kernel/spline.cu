@@ -22,11 +22,11 @@
  // #include "mem/memseg.h"
  // #include "mem/layout.h"
  // #include "mem/layout_cxx.hh"
- #define SPLINE_DIM 2
- #define AnchorBlockSizeX 16
- #define AnchorBlockSizeY 16
- #define AnchorBlockSizeZ 1
- #define numAnchorBlockX 1  // Number of Anchor blocks along X
+ #define SPLINE_DIM 3
+ #define AnchorBlockSizeX 8
+ #define AnchorBlockSizeY 8
+ #define AnchorBlockSizeZ 8
+ #define numAnchorBlockX 4  // Number of Anchor blocks along X
  #define numAnchorBlockY 1  // Number of Anchor blocks along Y
  #define numAnchorBlockZ 1  // Number of Anchor blocks along Z
  

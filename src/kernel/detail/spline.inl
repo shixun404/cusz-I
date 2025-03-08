@@ -49,8 +49,6 @@
  using DIM3 = dim3;
  using STRIDE3 = dim3;
  
- constexpr int BLOCK8 = 8;
- constexpr int BLOCK32 = 32;
  constexpr int DEFAULT_LINEAR_BLOCK_SIZE = 384;
  
  #define SHM_ERROR s_ectrl
@@ -175,8 +173,8 @@
      int radius)
  {
    // alternatively, reinterprete cast volatile T?[][][] to 1D
-   for (auto _tix = TIX; _tix < (AnchorBlockSizeX * numAnchorBlockX + 1) *
-                                    (AnchorBlockSizeY * numAnchorBlockY + 1);
+   for (auto _tix = TIX; _tix < (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) *
+                                    (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)) * (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3));
         _tix += LINEAR_BLOCK_SIZE) {
      auto x = (_tix % (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)));
      auto y = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1))) %
@@ -332,12 +330,12 @@
                        [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)])
  {
    constexpr auto TOTAL = (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) *
-                          (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2));
+                          (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)) *
                           (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3));
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
      auto x = (_tix % (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)));
-     auto y = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 3))) %
+     auto y = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1))) %
               (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2));
      auto z = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1))) /
               (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2));
@@ -923,13 +921,14 @@
    };
    
 
-    int max_unit = AnchorBlockSizeX > AnchorBlockSizeY ? AnchorBlockSizeX : AnchorBlockSizeY;
-    max_unit = max_unit > AnchorBlockSizeZ ? max_unit : AnchorBlockSizeZ;
+    int max_unit = AnchorBlockSizeX >= AnchorBlockSizeY ? AnchorBlockSizeX : AnchorBlockSizeY;
+    max_unit = max_unit >= AnchorBlockSizeZ ? max_unit : AnchorBlockSizeZ;
     max_unit /= 2;
+    int unit_x = AnchorBlockSizeX, unit_y = AnchorBlockSizeY, unit_z = AnchorBlockSizeZ;
     for(int unit = max_unit; unit >= 1; unit /= 2){
-      if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("unit=%d\n", unit);
+      // if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("unit=%d\n", unit);
       calc_eb(unit);
-      if(unit < AnchorBlockSizeX)
+      if(unit < AnchorBlockSizeX){
      interpolate_stage<
          T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
          numAnchorBlockX,  // Number of Anchor blocks along X
@@ -941,8 +940,10 @@
          BORDER_INCLUSIVE, WORKFLOW>(
          s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
          zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
-         intp_param.interpolators[0], numAnchorBlockX * AnchorBlockSizeX / (unit * 2), numAnchorBlockY + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ + (SPLINE_DIM >= 3));
-    if(unit < AnchorBlockSizeY)
+         intp_param.interpolators[0], numAnchorBlockX * AnchorBlockSizeX / unit_x, numAnchorBlockY * AnchorBlockSizeY / unit_y + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
+         unit_x /= 2;
+      }
+    if(unit < AnchorBlockSizeY){
      interpolate_stage<
          T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
          numAnchorBlockX,  // Number of Anchor blocks along X
@@ -954,8 +955,10 @@
          BORDER_INCLUSIVE, WORKFLOW>(
          s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
          zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
-         intp_param.interpolators[1], AnchorBlockSizeX / (unit) + (SPLINE_DIM >= 1), AnchorBlockSizeY / (unit * 2), NO_COARSEN, numAnchorBlockZ + (SPLINE_DIM >= 3));
-    if(unit < AnchorBlockSizeZ)
+         intp_param.interpolators[1], numAnchorBlockX * AnchorBlockSizeX / unit_x + (SPLINE_DIM >= 1), numAnchorBlockY * AnchorBlockSizeY / unit_y, NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
+          unit_y /= 2;
+        }
+    if(unit < AnchorBlockSizeZ){
     interpolate_stage<
         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
         numAnchorBlockX,  // Number of Anchor blocks along X
@@ -967,8 +970,9 @@
         BORDER_INCLUSIVE, WORKFLOW>(
         s_data, s_ectrl, data_size, xblue_reverse, yblue_reverse,
         zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,
-        intp_param.interpolators[2], AnchorBlockSizeX / (unit) + (SPLINE_DIM >= 1), AnchorBlockSizeY / (unit) + (SPLINE_DIM >= 2), NO_COARSEN, AnchorBlockSizeZ / (unit * 2));
-      
+        intp_param.interpolators[2], numAnchorBlockX * AnchorBlockSizeX / unit_x + (SPLINE_DIM >= 1), numAnchorBlockY * AnchorBlockSizeY / unit_y + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z);
+      unit_z /= 2;
+    }
    }
   
  }
