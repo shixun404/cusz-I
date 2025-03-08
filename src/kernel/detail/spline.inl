@@ -1065,6 +1065,7 @@
      TITER data,           // output
      DIM3 data_size,       //
      STRIDE3 data_leap,    //
+     TITER outlier_tmp,
      FP eb_r, FP ebx2, int radius, INTERPOLATION_PARAMS intp_param)
  {
    // compile time variables
@@ -1091,7 +1092,8 @@
        numAnchorBlockX,  // Number of Anchor blocks along X
        numAnchorBlockY,  // Number of Anchor blocks along Y
        numAnchorBlockZ,  // Number of Anchor blocks along Z
-       LINEAR_BLOCK_SIZE>(ectrl, ectrl_size, ectrl_leap, data, shmem.ectrl);
+      //  LINEAR_BLOCK_SIZE>(ectrl, ectrl_size, ectrl_leap, data, shmem.ectrl);
+       LINEAR_BLOCK_SIZE>(ectrl, ectrl_size, ectrl_leap, outlier_tmp, shmem.ectrl);
  
    cusz::device_api::spline_layout_interpolate<
        T, T, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,

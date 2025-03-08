@@ -23,10 +23,10 @@
  // #include "mem/layout.h"
  // #include "mem/layout_cxx.hh"
  #define SPLINE_DIM 3
- #define AnchorBlockSizeX 8
- #define AnchorBlockSizeY 16
- #define AnchorBlockSizeZ 16
- #define numAnchorBlockX 1  // Number of Anchor blocks along X
+ #define AnchorBlockSizeX 16
+ #define AnchorBlockSizeY 8
+ #define AnchorBlockSizeZ 8
+ #define numAnchorBlockX 2  // Number of Anchor blocks along X
  #define numAnchorBlockY 1  // Number of Anchor blocks along Y
  #define numAnchorBlockZ 1  // Number of Anchor blocks along Z
  
@@ -128,7 +128,7 @@
  
  template <typename T, typename E, typename FP>
  int spline_reconstruct(
-     pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, pszmem_cxx<T>* xdata,
+     pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, pszmem_cxx<T>* xdata, T* outlier_tmp,
      double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time,
      void* stream)
  {
@@ -159,6 +159,7 @@
         anchor->template st3<dim3>(),  //
         xdata->dptr(), xdata->template len3<dim3>(),
         xdata->template st3<dim3>(),  //
+        outlier_tmp,
         eb_r, ebx2, radius, intp_param);
  
    STOP_GPUEVENT_RECORDING(stream);
@@ -176,7 +177,7 @@
        struct INTERPOLATION_PARAMS& intp_param, float* time, void* stream,   \
        pszmem_cxx<T>* profiling_errors);                                     \
    template int spline_reconstruct<T, E>(                                    \
-       pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata, \
+       pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata, T* outlier_tmp, \
        double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param,   \
        float* time, void* stream);
  

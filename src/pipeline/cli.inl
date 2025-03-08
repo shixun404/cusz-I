@@ -176,9 +176,11 @@ class CLI {
     auto header = new psz_header;
     memcpy(header, compressed->hptr(), sizeof(psz_header));
     auto len = psz_utils::uncompressed_len(header);
-
+   
     auto decompressed = new pszmem_cxx<T>(len, 1, 1, "decompressed");
+    auto outlier_tmp = new pszmem_cxx<T>(len, 1, 1, "outlier_tmp");
     decompressed->control({MallocHost, Malloc});
+    outlier_tmp->control({MallocHost, Malloc});
 
     auto original = new pszmem_cxx<T>(len, 1, 1, "original-cmp");
 
@@ -188,10 +190,10 @@ class CLI {
 
     psz_decompress_init(compressor, header);
     //compressor->header->intp_param = ctx->intp_param;
-    
+    printf("uncompressed length: %ld\n", len);
     psz_decompress(
         compressor, compressed->dptr(), psz_utils::filesize(header),
-        decompressed->dptr(), decomp_len, (void*)&timerecord, stream);
+        decompressed->dptr(), outlier_tmp->dptr(), decomp_len, (void*)&timerecord, stream);
 
     if (ctx->report_time)
       psz::TimeRecordViewer::view_decompression(
