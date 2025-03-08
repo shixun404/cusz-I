@@ -131,7 +131,7 @@
  
  namespace {
  
- template <
+ template <int SPLINE_DIM,
      int AnchorBlockSizeX, int AnchorBlockSizeY, int AnchorBlockSizeZ,
      int numAnchorBlockX,  // Number of Anchor blocks along X
      int numAnchorBlockY,  // Number of Anchor blocks along Y
@@ -149,9 +149,9 @@
             BIZ * (AnchorBlockSizeZ * numAnchorBlockZ) + z < data_size.z;
    }
    else {
-     return x < (AnchorBlockSizeX * numAnchorBlockX) + (BIX == GDX - 1) and
-            y < (AnchorBlockSizeY * numAnchorBlockY) + (BIY == GDY - 1) and
-            z < (AnchorBlockSizeZ * numAnchorBlockZ) + (BIZ == GDZ - 1) and
+     return x < (AnchorBlockSizeX * numAnchorBlockX) + (BIX == GDX - 1) * (SPLINE_DIM <= 1) and
+            y < (AnchorBlockSizeY * numAnchorBlockY) + (BIY == GDY - 1) * (SPLINE_DIM <= 2) and
+            z < (AnchorBlockSizeZ * numAnchorBlockZ) + (BIZ == GDZ - 1) * (SPLINE_DIM <= 3) and
             BIX * (AnchorBlockSizeX * numAnchorBlockX) + x < data_size.x and
             BIY * (AnchorBlockSizeY * numAnchorBlockY) + y < data_size.y and
             BIZ * (AnchorBlockSizeZ * numAnchorBlockZ) + z < data_size.z;
@@ -367,9 +367,9 @@
                       [AnchorBlockSizeX * numAnchorBlockX +  + (SPLINE_DIM >= 1)],
      T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap)
  {
-   auto x_size = AnchorBlockSizeX * numAnchorBlockX + (BIX == GDX - 1);
-   auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1);
-   auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1);
+   auto x_size = AnchorBlockSizeX * numAnchorBlockX + (BIX == GDX - 1) * (SPLINE_DIM >= 1);
+   auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1) * (SPLINE_DIM >= 2);
+   auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1) * (SPLINE_DIM >= 3);
    auto TOTAL = x_size * y_size * z_size;
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
@@ -404,9 +404,9 @@
      T1* dram_compactval = nullptr, uint32_t* dram_compactidx = nullptr,
      uint32_t* dram_compactnum = nullptr)
  {
-   auto x_size = AnchorBlockSizeX * numAnchorBlockX + (BIX == GDX - 1);
-   auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1);
-   auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1);
+   auto x_size = AnchorBlockSizeX * numAnchorBlockX + (BIX == GDX - 1) * (SPLINE_DIM >= 1);
+   auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1) * (SPLINE_DIM >= 2);
+   auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1) * (SPLINE_DIM >= 3);
    auto TOTAL = x_size * y_size * z_size;
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
@@ -465,7 +465,7 @@
    static_assert((YELLOW and HOLLOW) == false, "must be only one hot (3)");
  
    auto run = [&](auto x, auto y, auto z) {
-     if (xyz_predicate<
+     if (xyz_predicate<SPLINE_DIM,
              AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
              numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
              BORDER_INCLUSIVE>(x, y, z, data_size)) {
@@ -927,6 +927,7 @@
     max_unit = max_unit > AnchorBlockSizeZ ? max_unit : AnchorBlockSizeZ;
     max_unit /= 2;
     for(int unit = max_unit; unit >= 1; unit /= 2){
+      if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("unit=%d\n", unit);
       calc_eb(unit);
       if(unit < AnchorBlockSizeX)
      interpolate_stage<
@@ -1029,7 +1030,7 @@
          numAnchorBlockZ,  // Number of Anchor blocks along Z
          LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
          shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
- 
+         if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("Finish spline layout interpolate, start shmem2global_data_with_compaction\n");
      shmem2global_data_with_compaction<
          T, E, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
          numAnchorBlockX,  // Number of Anchor blocks along X
