@@ -1693,7 +1693,7 @@ auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,in
     for(int unit = max_unit; unit >= 1; unit /= 2){
       // if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("unit=%d\n", unit);
       calc_eb(unit);
-      // if(unit > 2){
+      if(unit > 2){
       // if(true){
      interpolate_stage<
          T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
@@ -1734,133 +1734,133 @@ auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,in
         zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,
         intp_param.interpolators[2], numAnchorBlockX * AnchorBlockSizeX / unit_x + (SPLINE_DIM >= 1), numAnchorBlockY * AnchorBlockSizeY / unit_y + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z);
       unit_z /= 2;
-      // }
-      // else if(unit == 2){
-      //   if(intp_param.interpolators[0]==0){
+      }
+      else if(unit == 2){
+        if(intp_param.interpolators[0]==0){
  
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_line_16b_2u), //
-      //         true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_2u), //
+              true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP,
-      //         SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_face_16b_2u), //
-      //         false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP,
+              SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_2u), //
+              false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_cube_16b_2u), //
-      //         false, false, true, LINEAR_BLOCK_SIZE,64 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_2u), //
+              false, false, true, LINEAR_BLOCK_SIZE,64 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
-      // }
-      // else{
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_line_16b_2u), //
-      //         true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+      }
+      else{
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_2u), //
+              true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_face_16b_2u), //
-      //         false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_2u), //
+              false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_cube_16b_2u), //
-      //         false, false, true, LINEAR_BLOCK_SIZE,64 ,NO_COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_2u), //
+              false, false, true, LINEAR_BLOCK_SIZE,64 ,NO_COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
           
   
-      // }
-      // }
-      // else{
-      //   if(intp_param.interpolators[0]==0){
+      }
+      }
+      else{
+        if(intp_param.interpolators[0]==0){
  
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_line_16b_1u), //
-      //         true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_1u), //
+              true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_face_16b_1u), //
-      //         false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_1u), //
+              false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_cube_16b_1u), //
-      //         false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_1u), //
+              false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
-      // }
-      // else{
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_line_16b_1u), //
-      //         true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+      }
+      else{
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_1u), //
+              true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_face_16b_1u), //
-      //         false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_1u), //
+              false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
-      //     interpolate_stage_md<
-      //         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
-      //         numAnchorBlockX,  // Number of Anchor blocks along X
-      //         numAnchorBlockY,  // Number of Anchor blocks along Y
-      //         numAnchorBlockZ,  // Number of Anchor blocks along Z
-      //         decltype(xyzmap_cube_16b_1u), //
-      //         false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
-      //         s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+          interpolate_stage_md<
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_1u), //
+              false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
           
   
-      // }
+      }
   
-      // }
+      }
 
    }
   
