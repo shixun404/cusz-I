@@ -344,9 +344,51 @@
      auto gz = (z + BIZ * (AnchorBlockSizeZ * numAnchorBlockZ));
      
      auto gid = gx + gy * ectrl_leap.y + gz * ectrl_leap.z;
- 
+    
+     unsigned int level = 0;
+    //  int level_size = AnchorBlockSizeX;
+    //  while(level_size > 1){
+    //   if ((gx % level_size == 0) && (gy % level_size == 0) && (gz % level_size == 0)) break;
+    //   level += 1;
+    //   level_size /= 2;
+    //  }
+    unsigned int level = 0;
+    if ((gx % 16 == 0) && (gy % 16 == 0) && (gz % 16 == 0)) level = 0;
+    else if ((gx % 8 == 0) && (gy % 8 == 0) && (gz % 8 == 0)) level = 1;
+    else if ((gx % 4 == 0) && (gy % 4 == 0) && (gz % 4 == 0)) level = 2;
+    else if ((gx % 2 == 0) && (gy % 2 == 0) && (gz % 2 == 0)) level = 3;
+    else level = 4;
+     unsigned int shift = 4 - level;
+
+     // Compute level index using integer division
+     unsigned int level_index_x = gx >> shift;
+     unsigned int level_index_y = gy >> shift;
+     unsigned int level_index_z = gz >> shift;
+
+     // Compute level dimensions
+     unsigned int level_dim_x = ectrl_size.x >> shift;
+     unsigned int level_dim_y = ectrl_size.y >> shift;
+     unsigned int level_dim_z = ectrl_size.z >> shift;
+
+     // Compute upper-level dimensions
+     unsigned int upper_level_dim_x = ectrl_size.x >> (shift + 1);
+     unsigned int upper_level_dim_y = ectrl_size.y >> (shift + 1);
+     unsigned int upper_level_dim_z = ectrl_size.z >> (shift + 1);
+
+     // Compute offset
+     unsigned int offset = (level == 0) ? 0 : (
+     ((level_index_x + 1) / 2) * upper_level_dim_y * upper_level_dim_z +
+     ((level_index_y + 1) / 2) * upper_level_dim_z * (1 - (level_index_x % 2)) +
+     ((level_index_z + 1) / 2) * (1 - (level_index_x % 2)) * (1 - (level_index_y % 2)));
+
+     // Compute index
+     unsigned int index = level_offsets[level] +
+         level_index_x * level_dim_y * level_dim_z +
+         level_index_y * level_dim_z +
+         level_index_z - offset;
+      
      if (gx < ectrl_size.x and gy < ectrl_size.y and gz < ectrl_size.z)
-       s_ectrl[z][y][x] = static_cast<T>(ectrl[gid]) + scattered_outlier[gid];
+       s_ectrl[z][y][x] = static_cast<T>(ectrl[index]) + scattered_outlier[gid];
    }
    __syncthreads();
  }
@@ -415,14 +457,51 @@
      auto gy = (y + BIY * AnchorBlockSizeY * numAnchorBlockY);
      auto gz = (z + BIZ * AnchorBlockSizeZ * numAnchorBlockZ);
      auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
+
+     unsigned int level  =0;
+     if ((gx % 16 == 0) && (gy % 16 == 0) && (gz % 16 == 0)) level = 0;
+     else if ((gx % 8 == 0) && (gy % 8 == 0) && (gz % 8 == 0)) level = 1;
+     else if ((gx % 4 == 0) && (gy % 4 == 0) && (gz % 4 == 0)) level = 2;
+     else if ((gx % 2 == 0) && (gy % 2 == 0) && (gz % 2 == 0)) level = 3;
+     else level = 4;
  
+     unsigned int shift = 4 - level;
+ 
+     // Compute level index using integer division
+     unsigned int level_index_x = gx >> shift;
+     unsigned int level_index_y = gy >> shift;
+     unsigned int level_index_z = gz >> shift;
+ 
+     // Compute level dimensions
+     unsigned int level_dim_x = buf_size.x >> shift;
+     unsigned int level_dim_y = buf_size.y >> shift;
+     unsigned int level_dim_z = buf_size.z >> shift;
+ 
+     // Compute upper-level dimensions
+     unsigned int upper_level_dim_x = buf_size.x >> (shift + 1);
+     unsigned int upper_level_dim_y = buf_size.y >> (shift + 1);
+     unsigned int upper_level_dim_z = buf_size.z >> (shift + 1);
+ 
+     // Compute offset
+     unsigned int offset = (level == 0) ? 0 : (
+     ((level_index_x + 1) / 2) * upper_level_dim_y * upper_level_dim_z +
+     ((level_index_y + 1) / 2) * upper_level_dim_z * (1 - (level_index_x % 2)) +
+     ((level_index_z + 1) / 2) * (1 - (level_index_x % 2)) * (1 -  (level_index_y % 2)));
+ 
+     // Compute index
+     unsigned int index = level_offsets[level] +
+         level_index_x * level_dim_y * level_dim_z +
+         level_index_y * level_dim_z +
+         level_index_z - offset;
+ 
+
      auto candidate = s_buf[z][y][x];
      bool quantizable = (candidate >= 0) and (candidate < 2 * radius);
- 
+    
      if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z) {
        // TODO this is for algorithmic demo by reading from shmem
        // For performance purpose, it can be inlined in quantization
-       dram_buf[gid] = quantizable * static_cast<T2>(candidate);
+       dram_buf[index] = quantizable * static_cast<T2>(candidate);
  
        if (not quantizable) {
          auto cur_idx = atomicAdd(dram_compactnum, 1);
