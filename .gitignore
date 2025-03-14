@@ -30,6 +30,9 @@ Makefile
 cmake-build-debug
 cmake-build-release
 build
+build_1
+build_2
+build_3
 build-cusz
 build-hipsz
 build-dpsz
