@@ -332,6 +332,12 @@
    constexpr auto TOTAL = (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) *
                           (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)) *
                           (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3));
+    unsigned int level_offsets[5] = { 0, 
+          (ectrl_size.x * ectrl_size.y * ectrl_size.z) / (16 * 16 * 16),
+          (ectrl_size.x * ectrl_size.y * ectrl_size.z) / (8 * 8 * 8),
+          (ectrl_size.x * ectrl_size.y * ectrl_size.z) / (4 * 4 * 4),
+          (ectrl_size.x * ectrl_size.y * ectrl_size.z) / (2 * 2 * 2),
+      };
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
      auto x = (_tix % (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)));
@@ -345,7 +351,7 @@
      
      auto gid = gx + gy * ectrl_leap.y + gz * ectrl_leap.z;
     
-     unsigned int level = 0;
+    //  unsigned int level = 0;
     //  int level_size = AnchorBlockSizeX;
     //  while(level_size > 1){
     //   if ((gx % level_size == 0) && (gy % level_size == 0) && (gz % level_size == 0)) break;
@@ -448,6 +454,12 @@
    auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1) * (SPLINE_DIM >= 2);
    auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1) * (SPLINE_DIM >= 3);
    auto TOTAL = x_size * y_size * z_size;
+   unsigned int level_offsets[5] = { 0, 
+    (buf_size.x * buf_size.y * buf_size.z) / (16 * 16 * 16),
+    (buf_size.x * buf_size.y * buf_size.z) / (8 * 8 * 8),
+    (buf_size.x * buf_size.y * buf_size.z) / (4 * 4 * 4),
+    (buf_size.x * buf_size.y * buf_size.z) / (2 * 2 * 2),
+};
  
    for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
      auto x = (_tix % x_size);
