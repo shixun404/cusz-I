@@ -438,7 +438,11 @@
  template <
      typename T1,
      typename T2,
-     typename FP,
+     typename FP, int SPLINE_DIM, int AnchorBlockSizeX,
+     int AnchorBlockSizeY, int AnchorBlockSizeZ,
+     int numAnchorBlockX,  // Number of Anchor blocks along X
+     int numAnchorBlockY,  // Number of Anchor blocks along Y
+     int numAnchorBlockZ,  // Number of Anchor blocks along Z
      typename LAMBDA,
      bool LINE,
      bool FACE,
@@ -470,9 +474,12 @@
  
          
  
-         if (xyz17x17x17_predicate<BORDER_INCLUSIVE>(x, y, z,data_size)) {
+         if (xyz_predicate<SPLINE_DIM,
+          AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+          numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
+          BORDER_INCLUSIVE>(x, y, z, data_size)) {
              T1 pred = 0;
-             auto global_x=BIX*BLOCK16+x, global_y=BIY*BLOCK16+y, global_z=BIZ*BLOCK16+z;
+             auto global_x=BIX*AnchorBlockSizeX + x, global_y=BIY*AnchorBlockSizeY+y, global_z=BIZ*AnchorBlockSizeZ+z;
             
              if CONSTEXPR (LINE) {  //
                  //bool I_X = x&1; 
@@ -483,9 +490,9 @@
  
                      if(BIZ!=GDZ-1){
  
-                         if(z>=3*unit and z+3*unit<=BLOCK16  )
+                         if(z>=3*unit and z+3*unit<=AnchorBlockSizeZ  )
                              pred = cubic_interpolator(s_data[z - 3*unit][y][x],s_data[z - unit][y][x],s_data[z + unit][y][x],s_data[z + 3*unit][y][x]);
-                         else if (z+3*unit<=BLOCK16)
+                         else if (z+3*unit<=AnchorBlockSizeZ)
                              pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
                          else if (z>=3*unit)
                              pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
@@ -495,7 +502,7 @@
                      }
                      else{
                          if(z>=3*unit){
-                             if(z+3*unit<=BLOCK16 and global_z+3*unit<data_size.z)
+                             if(z+3*unit<=AnchorBlockSizeZ and global_z+3*unit<data_size.z)
                                  pred = cubic_interpolator(s_data[z - 3*unit][y][x],s_data[z - unit][y][x] ,s_data[z + unit][y][x],s_data[z + 3*unit][y][x]);
                              else if (global_z+unit<data_size.z)
                                  pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
@@ -504,7 +511,7 @@
  
                          }
                          else{
-                             if(z+3*unit<=BLOCK16 and global_z+3*unit<data_size.z)
+                             if(z+3*unit<=AnchorBlockSizeZ and global_z+3*unit<data_size.z)
                                  pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
                              else if (global_z+unit<data_size.z)
                                  pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
@@ -517,9 +524,9 @@
                  else if (I_Y){
                      //assert(x&1==0 and z&1==0);
                      if(BIY!=GDY-1){
-                         if(y>=3*unit and y+3*unit<=BLOCK16 )
+                         if(y>=3*unit and y+3*unit<=AnchorBlockSizeY )
                              pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x] ,s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]) ;
-                         else if (y+3*unit<=BLOCK16)
+                         else if (y+3*unit<=AnchorBlockSizeY)
                              pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
                          else if (y>=3*unit)
                              pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
@@ -528,7 +535,7 @@
                      }
                      else{
                          if(y>=3*unit){
-                             if(y+3*unit<=BLOCK16 and global_y+3*unit<data_size.y)
+                             if(y+3*unit<=AnchorBlockSizeY and global_y+3*unit<data_size.y)
                                  pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z][y - unit][x],s_data[z ][y+ unit][x],s_data[z ][y+ 3*unit][x]);
                              else if (global_y+unit<data_size.y)
                                  pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 8;
@@ -537,7 +544,7 @@
  
                          }
                          else{
-                             if(y+3*unit<=BLOCK16 and global_y+3*unit<data_size.y)
+                             if(y+3*unit<=AnchorBlockSizeY and global_y+3*unit<data_size.y)
                                  pred = (3*s_data[z][y - unit][x] + 6*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 8;
                              else if (global_y+unit<data_size.y)
                                  pred = (s_data[z ][y- unit][x] + s_data[z][y + unit][x]) / 2;
@@ -549,9 +556,9 @@
                  else{//I_X
                      //assert(y&1==0 and z&1==0);
                      if(BIX!=GDX-1){
-                         if(x>=3*unit and x+3*unit<=BLOCK16 )
+                         if(x>=3*unit and x+3*unit<=AnchorBlockSizeX )
                              pred = cubic_interpolator(s_data[z ][y][x- 3*unit],s_data[z ][y][x- unit],s_data[z ][y][x+ unit],s_data[z ][y][x + 3*unit]);
-                         else if (x+3*unit<=BLOCK16)
+                         else if (x+3*unit<=AnchorBlockSizeX)
                              pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
                          else if (x>=3*unit)
                              pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
@@ -560,7 +567,7 @@
                      }
                      else{
                          if(x>=3*unit){
-                             if(x+3*unit<=BLOCK16 and global_x+3*unit<data_size.x)
+                             if(x+3*unit<=AnchorBlockSizeX and global_x+3*unit<data_size.x)
                                  pred = cubic_interpolator(s_data[z ][y][x- 3*unit],s_data[z][y ][x- unit],s_data[z ][y][x+ unit],s_data[z ][y][x+ 3*unit]);
                              else if (global_x+unit<data_size.x)
                                  pred = (-s_data[z ][y][x- 3*unit]+6*s_data[z ][y][x- unit] + 3*s_data[z ][y][x+ unit]) / 8;
@@ -569,7 +576,7 @@
  
                          }
                          else{
-                             if(x+3*unit<=BLOCK16 and global_x+3*unit<data_size.x)
+                             if(x+3*unit<=AnchorBlockSizeX and global_x+3*unit<data_size.x)
                                  pred = (3*s_data[z][y ][x- unit] + 6*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 8;
                              else if (global_x+unit<data_size.x)
                                  pred = (s_data[z ][y][x- unit] + s_data[z][y ][x+ unit]) / 2;
@@ -580,10 +587,10 @@
  
                  }
              }
-             auto get_interp_order = [&](auto x, auto BI, auto GD, auto gx, auto gs){
+             auto get_interp_order = [&](auto x, auto BI, auto GD, auto gx, auto gs, auto AnchorBlockSize){
                  int b = x >= 3*unit ? 3 : 1;
                  int f = 0;
-                 if(x+3*unit<=BLOCK16 and (BI != GD-1 or gx+3*unit < gs) )
+                 if(x+3*unit<=AnchorBlockSize and (BI != GD-1 or gx+3*unit < gs) )
                      f = 3;
                  else if (BI != GD-1 or gx+unit < gs)
                      f = 1;
@@ -613,8 +620,8 @@
                  if (I_YZ){
  
  
-                     auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z);
-                     auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y);
+                     auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z, AnchorBlockSizeZ);
+                     auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y, AnchorBlockSizeY);
  
                      if(interp_z==4){
                          if(interp_y==4){
@@ -676,8 +683,8 @@
  
                  }
                  else if (I_XZ){
-                     auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z);
-                     auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x);
+                     auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z, AnchorBlockSizeZ);
+                     auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x, AnchorBlockSizeX);
  
                      //if(BIX == 10 and BIY == 12 and BIZ == 0 and x==13 and y==6 and z==9)
                      //printf("ixz %d %d\n", interp_x,interp_z);
@@ -769,8 +776,8 @@
                  else{//I_XY
                      //assert(z&1==0);
  
-                     auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y);
-                     auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x);
+                     auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y,  AnchorBlockSizeY);
+                     auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x,  AnchorBlockSizeX);
  
                      if(interp_y==4){
                          if(interp_x==4){
@@ -855,9 +862,9 @@
              }
  
              if CONSTEXPR (CUBE) {  //
-                 auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z);
-                 auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y);
-                 auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x);
+                 auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z, AnchorBlockSizeZ);
+                 auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y, AnchorBlockSizeY);
+                 auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x, AnchorBlockSizeX);
  
                  if(interp_z == 4){
                      if(interp_y == 4){
@@ -1013,7 +1020,6 @@
                         [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
                         [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
      DIM3 data_size, LAMBDAX xmap, LAMBDAY ymap, LAMBDAZ zmap, int unit,
-     int unit_x, int unit_y, int unit_z,
      FP eb_r, FP ebx2, int radius, bool interpolator, int BLOCK_DIMX,
      int BLOCK_DIMY, bool COARSEN, int BLOCK_DIMZ)
  {
@@ -1369,8 +1375,7 @@
        }
      }
    };
-   // if CONSTEXPR (COARSEN) {
-     int TOTAL = BLOCK_DIMX * BLOCK_DIMY * BLOCK_DIMZ;
+   int TOTAL = BLOCK_DIMX * BLOCK_DIMY * BLOCK_DIMZ;
      for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
        auto itix = (_tix % BLOCK_DIMX);
        auto itiy = (_tix / BLOCK_DIMX) % BLOCK_DIMY;
@@ -1384,7 +1389,7 @@
  }
  
  }  // namespace
- 
+
  template <
      typename T1, typename T2, typename FP, int SPLINE_DIM, int AnchorBlockSizeX,
      int AnchorBlockSizeY, int AnchorBlockSizeZ,
@@ -1608,7 +1613,7 @@ auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,in
          false, false, true, LINEAR_BLOCK_SIZE,
          BORDER_INCLUSIVE, WORKFLOW>(
          s_data, s_ectrl, data_size, xhollow_reverse, yhollow_reverse,
-         zhollow_reverse, unit, unit_x / 2, unit_y / 2, unit_z / 2, cur_eb_r, cur_ebx2, radius,
+         zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,
          intp_param.interpolators[0], numAnchorBlockX * AnchorBlockSizeX / unit_x, numAnchorBlockY * AnchorBlockSizeY / unit_y + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
          unit_x /= 2;
      interpolate_stage<
@@ -1621,7 +1626,7 @@ auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,in
          false, true, false, LINEAR_BLOCK_SIZE,
          BORDER_INCLUSIVE, WORKFLOW>(
          s_data, s_ectrl, data_size, xyellow_reverse, yyellow_reverse,
-         zyellow_reverse, unit, unit_x, unit_y / 2, unit_z / 2, unit_y / 2, unit_z / 2,  cur_eb_r, cur_ebx2, radius,
+         zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,
          intp_param.interpolators[1], numAnchorBlockX * AnchorBlockSizeX / unit_x + (SPLINE_DIM >= 1), numAnchorBlockY * AnchorBlockSizeY / unit_y, NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
           unit_y /= 2;
     interpolate_stage<
@@ -1642,34 +1647,59 @@ auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,in
         if(intp_param.interpolators[0]==0){
  
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_line_16b_2u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_2u), //
               true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_face_16b_2u), //
+              T1, T2, FP,
+              SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_2u), //
               false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_cube_16b_2u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_2u), //
               false, false, true, LINEAR_BLOCK_SIZE,64 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
       }
       else{
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_line_16b_2u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_2u), //
               true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_face_16b_2u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_2u), //
               false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_cube_16b_2u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_2u), //
               false, false, true, LINEAR_BLOCK_SIZE,64 ,NO_COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
           
@@ -1680,34 +1710,58 @@ auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,in
         if(intp_param.interpolators[0]==0){
  
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_line_16b_1u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_1u), //
               true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_face_16b_1u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_1u), //
               false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_cube_16b_1u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_1u), //
               false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
   
       }
       else{
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_line_16b_1u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_line_16b_1u), //
               true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_face_16b_1u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_face_16b_1u), //
               false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
   
           interpolate_stage_md<
-              T1, T2, FP, decltype(xyzmap_cube_16b_1u), //
+              T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+              numAnchorBlockX,  // Number of Anchor blocks along X
+              numAnchorBlockY,  // Number of Anchor blocks along Y
+              numAnchorBlockZ,  // Number of Anchor blocks along Z
+              decltype(xyzmap_cube_16b_1u), //
               false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
               s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
           
