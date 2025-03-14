@@ -1602,7 +1602,8 @@ auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,in
     for(int unit = max_unit; unit >= 1; unit /= 2){
       // if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("unit=%d\n", unit);
       calc_eb(unit);
-      if(unit > 2){
+      // if(unit > 2){
+      if(true){
      interpolate_stage<
          T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
          numAnchorBlockX,  // Number of Anchor blocks along X
