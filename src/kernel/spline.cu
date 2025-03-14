@@ -24,7 +24,7 @@
  // #include "mem/layout_cxx.hh"
  #define SPLINE_DIM 3
  #define AnchorBlockSizeX 16
- #define AnchorBlockSizeY 8
+ #define AnchorBlockSizeY 16
  #define AnchorBlockSizeZ 16
  #define numAnchorBlockX 1  // Number of Anchor blocks along X
  #define numAnchorBlockY 1  // Number of Anchor blocks along Y

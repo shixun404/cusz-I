@@ -434,6 +434,568 @@
    __syncthreads();
  }
  
+
+ template <
+     typename T1,
+     typename T2,
+     typename FP,
+     typename LAMBDA,
+     bool LINE,
+     bool FACE,
+     bool CUBE,
+     int  LINEAR_BLOCK_SIZE,
+     int NUM_ELE,
+     bool COARSEN,
+     bool BORDER_INCLUSIVE,
+     bool WORKFLOW,
+     typename INTERP>
+ __forceinline__ __device__ void interpolate_stage_md(
+     volatile T1 s_data[17][17][17],
+     volatile T2 s_ectrl[17][17][17],
+     DIM3    data_size,
+     LAMBDA xyzmap,
+     int         unit,
+     FP          eb_r,
+     FP          ebx2,
+     int         radius,
+     INTERP cubic_interpolator)
+ {
+     static_assert(COARSEN or (NUM_ELE <= 384), "block oversized");
+     static_assert((LINE or FACE or CUBE) == true, "must be one hot");
+     static_assert((LINE and FACE) == false, "must be only one hot (1)");
+     static_assert((LINE and CUBE) == false, "must be only one hot (2)");
+     static_assert((FACE and CUBE) == false, "must be only one hot (3)");
+ 
+     auto run = [&](auto x, auto y, auto z) {
+ 
+         
+ 
+         if (xyz17x17x17_predicate<BORDER_INCLUSIVE>(x, y, z,data_size)) {
+             T1 pred = 0;
+             auto global_x=BIX*BLOCK16+x, global_y=BIY*BLOCK16+y, global_z=BIZ*BLOCK16+z;
+            
+             if CONSTEXPR (LINE) {  //
+                 //bool I_X = x&1; 
+                 bool I_Y = (y % (2*unit) )> 0; 
+                 bool I_Z = (z % (2*unit) )> 0; 
+                 if (I_Z){
+                     //assert(x&1==0 and y&1==0);
+ 
+                     if(BIZ!=GDZ-1){
+ 
+                         if(z>=3*unit and z+3*unit<=BLOCK16  )
+                             pred = cubic_interpolator(s_data[z - 3*unit][y][x],s_data[z - unit][y][x],s_data[z + unit][y][x],s_data[z + 3*unit][y][x]);
+                         else if (z+3*unit<=BLOCK16)
+                             pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                         else if (z>=3*unit)
+                             pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+ 
+                         else
+                             pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                     }
+                     else{
+                         if(z>=3*unit){
+                             if(z+3*unit<=BLOCK16 and global_z+3*unit<data_size.z)
+                                 pred = cubic_interpolator(s_data[z - 3*unit][y][x],s_data[z - unit][y][x] ,s_data[z + unit][y][x],s_data[z + 3*unit][y][x]);
+                             else if (global_z+unit<data_size.z)
+                                 pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+                             else
+                                 pred=s_data[z - unit][y][x];
+ 
+                         }
+                         else{
+                             if(z+3*unit<=BLOCK16 and global_z+3*unit<data_size.z)
+                                 pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                             else if (global_z+unit<data_size.z)
+                                 pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                             else
+                                 pred=s_data[z - unit][y][x];
+                         } 
+                     }
+ 
+                 }
+                 else if (I_Y){
+                     //assert(x&1==0 and z&1==0);
+                     if(BIY!=GDY-1){
+                         if(y>=3*unit and y+3*unit<=BLOCK16 )
+                             pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x] ,s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]) ;
+                         else if (y+3*unit<=BLOCK16)
+                             pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                         else if (y>=3*unit)
+                             pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                         else
+                             pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                     }
+                     else{
+                         if(y>=3*unit){
+                             if(y+3*unit<=BLOCK16 and global_y+3*unit<data_size.y)
+                                 pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z][y - unit][x],s_data[z ][y+ unit][x],s_data[z ][y+ 3*unit][x]);
+                             else if (global_y+unit<data_size.y)
+                                 pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 8;
+                             else
+                                 pred=s_data[z ][y- unit][x];
+ 
+                         }
+                         else{
+                             if(y+3*unit<=BLOCK16 and global_y+3*unit<data_size.y)
+                                 pred = (3*s_data[z][y - unit][x] + 6*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                             else if (global_y+unit<data_size.y)
+                                 pred = (s_data[z ][y- unit][x] + s_data[z][y + unit][x]) / 2;
+                             else
+                                 pred=s_data[z ][y- unit][x];
+                         } 
+                     }
+                 }
+                 else{//I_X
+                     //assert(y&1==0 and z&1==0);
+                     if(BIX!=GDX-1){
+                         if(x>=3*unit and x+3*unit<=BLOCK16 )
+                             pred = cubic_interpolator(s_data[z ][y][x- 3*unit],s_data[z ][y][x- unit],s_data[z ][y][x+ unit],s_data[z ][y][x + 3*unit]);
+                         else if (x+3*unit<=BLOCK16)
+                             pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
+                         else if (x>=3*unit)
+                             pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
+                         else
+                             pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                     }
+                     else{
+                         if(x>=3*unit){
+                             if(x+3*unit<=BLOCK16 and global_x+3*unit<data_size.x)
+                                 pred = cubic_interpolator(s_data[z ][y][x- 3*unit],s_data[z][y ][x- unit],s_data[z ][y][x+ unit],s_data[z ][y][x+ 3*unit]);
+                             else if (global_x+unit<data_size.x)
+                                 pred = (-s_data[z ][y][x- 3*unit]+6*s_data[z ][y][x- unit] + 3*s_data[z ][y][x+ unit]) / 8;
+                             else
+                                 pred=s_data[z ][y][x- unit];
+ 
+                         }
+                         else{
+                             if(x+3*unit<=BLOCK16 and global_x+3*unit<data_size.x)
+                                 pred = (3*s_data[z][y ][x- unit] + 6*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 8;
+                             else if (global_x+unit<data_size.x)
+                                 pred = (s_data[z ][y][x- unit] + s_data[z][y ][x+ unit]) / 2;
+                             else
+                                 pred=s_data[z ][y][x- unit];
+                         } 
+                     }
+ 
+                 }
+             }
+             auto get_interp_order = [&](auto x, auto BI, auto GD, auto gx, auto gs){
+                 int b = x >= 3*unit ? 3 : 1;
+                 int f = 0;
+                 if(x+3*unit<=BLOCK16 and (BI != GD-1 or gx+3*unit < gs) )
+                     f = 3;
+                 else if (BI != GD-1 or gx+unit < gs)
+                     f = 1;
+                 if (b==3){
+                     if(f==3)
+                         return 4;
+                     else if (f==1)
+                         return 3;
+                     else
+                         return 0;
+                 }
+                 else{//b==1
+                     if(f==3)
+                         return 2;
+                     else if (f==1)
+                         return 1;
+                     else
+                         return 0;
+                 }
+             };
+             if CONSTEXPR (FACE) {  //
+ 
+                 bool I_YZ = (x % (2*unit) ) == 0;
+                 bool I_XZ = (y % (2*unit ) )== 0;
+
+                  
+                 if (I_YZ){
+ 
+ 
+                     auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z);
+                     auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y);
+ 
+                     if(interp_z==4){
+                         if(interp_y==4){
+                             pred = (cubic_interpolator(s_data[z - 3*unit][y][x],s_data[z - unit][y][x],s_data[z + unit][y][x],s_data[z + 3*unit][y][x])+
+                                     cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x] ,s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]) ) / 2;
+                         }
+                         else
+                             pred = cubic_interpolator(s_data[z - 3*unit][y][x],s_data[z - unit][y][x],s_data[z + unit][y][x],s_data[z + 3*unit][y][x]);
+ 
+                     }
+                     else if (interp_z == 3){
+                         if(interp_y==4)
+                             pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x] ,s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]);
+                         else if (interp_y == 3)
+                             pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x] - s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 16;
+                         else if (interp_y == 2)
+                             pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x] + 3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                         else
+                             pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+ 
+                     }
+ 
+                     else if (interp_z == 2){
+                         if(interp_y==4)
+                             pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x] ,s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]);
+                         else if (interp_y == 3)
+                             pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x] - s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 16;
+                         else if (interp_y == 2)
+                             pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x] + 3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                         else
+                             pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+ 
+                     }
+                     else if (interp_z == 1){
+                         if(interp_y == 4)
+                             pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x] ,s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]);
+                         else if (interp_y == 3)
+                             pred = (-s_data[z ][y- 3*unit][x] + 6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                         else if (interp_y == 2)
+                             pred = (3*s_data[z][y - unit][x] + 6*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                         else if (interp_y == 1)
+                             pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x] + s_data[z ][y - unit][x] + s_data[z][y + unit][x]) / 4;
+                         else 
+                             pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                     }
+                     else{
+                         if(interp_y == 4)
+                             pred = cubic_interpolator(s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x] ,s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]);
+                         else if (interp_y == 3)
+                             pred = (-s_data[z ][y- 3*unit][x] + 6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                         else if (interp_y == 2)
+                             pred = (3*s_data[z][y - unit][x] + 6*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                         else if (interp_y == 1)
+                             pred = (s_data[z ][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                         else 
+                             pred = (s_data[z - unit][y][x] + s_data[z ][y - unit][x] - s_data[z - unit][y - unit][x]);
+ 
+                     }
+ 
+                 }
+                 else if (I_XZ){
+                     auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z);
+                     auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x);
+ 
+                     //if(BIX == 10 and BIY == 12 and BIZ == 0 and x==13 and y==6 and z==9)
+                     //printf("ixz %d %d\n", interp_x,interp_z);
+ 
+                     if(interp_z==4){
+                         if(interp_x==4){
+                             pred = (cubic_interpolator(s_data[z - 3*unit][y][x],
+                                                          s_data[z - unit][y][x],
+                                                          s_data[z + unit][y][x],
+                                                          s_data[z + 3*unit][y][x]) +
+                                     cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                          s_data[z][y][x - unit],
+                                                          s_data[z][y][x + unit],
+                                                          s_data[z][y][x + 3*unit])
+                                    ) / 2;
+                         }
+                         else
+                             pred = cubic_interpolator(s_data[z - 3*unit][y][x],
+                                                       s_data[z - unit][y][x],
+                                                       s_data[z + unit][y][x],
+                                                       s_data[z + 3*unit][y][x]);
+ 
+                     }
+                     else if (interp_z == 3){
+                         if(interp_x==4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (-s_data[z - 3*unit][y][x] + 6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]
+                                     - s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 16;
+                         else if (interp_x == 2)
+                             pred = (-s_data[z - 3*unit][y][x] + 6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]
+                                     + 3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 16;
+                         else
+                             pred = (-s_data[z - 3*unit][y][x] + 6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+ 
+                     }
+                     else if (interp_z == 2){
+                         if(interp_x==4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x] - s_data[z + 3*unit][y][x]
+                                     - s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 16;
+                         else if (interp_x == 2)
+                             pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x] - s_data[z + 3*unit][y][x]
+                                     + 3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 16;
+                         else
+                             pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x] - s_data[z + 3*unit][y][x]) / 8;
+ 
+                     }
+                     else if (interp_z == 1){
+                         if(interp_x == 4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (-s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 8;
+                         else if (interp_x == 2)
+                             pred = (3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 8;
+                         else if (interp_x == 1)
+                             pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]
+                                     + s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 4;
+                         else 
+                             pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                     }
+                     else{
+                         if(interp_x == 4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (-s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 8;
+                         else if (interp_x == 2)
+                             pred = (3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 8;
+                         else if (interp_x == 1)
+                             pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                         else 
+                             pred = (s_data[z - unit][y][x] + s_data[z][y][x - unit] - s_data[z - unit][y][x - unit]);
+                     }
+ 
+                 }
+                 else{//I_XY
+                     //assert(z&1==0);
+ 
+                     auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y);
+                     auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x);
+ 
+                     if(interp_y==4){
+                         if(interp_x==4){
+                             pred = (cubic_interpolator(s_data[z][y - 3*unit][x],
+                                                          s_data[z][y - unit][x],
+                                                          s_data[z][y + unit][x],
+                                                          s_data[z][y + 3*unit][x]) +
+                                     cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                          s_data[z][y][x - unit],
+                                                          s_data[z][y][x + unit],
+                                                          s_data[z][y][x + 3*unit])
+                                    ) / 2;
+                         }
+                         else
+                             pred = cubic_interpolator(s_data[z][y - 3*unit][x],
+                                                       s_data[z][y - unit][x],
+                                                       s_data[z][y + unit][x],
+                                                       s_data[z][y + 3*unit][x]);
+                     }
+                     else if (interp_y == 3){
+                         if(interp_x==4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (-s_data[z][y - 3*unit][x] + 6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]
+                                     - s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 16;
+                         else if (interp_x == 2)
+                             pred = (-s_data[z][y - 3*unit][x] + 6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]
+                                     + 3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 16;
+                         else
+                             pred = (-s_data[z][y - 3*unit][x] + 6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                     }
+                     else if (interp_y == 2){
+                         if(interp_x==4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (3*s_data[z][y - unit][x] + 6*s_data[z][y + unit][x] - s_data[z][y + 3*unit][x]
+                                     - s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 16;
+                         else if (interp_x == 2)
+                             pred = (3*s_data[z][y - unit][x] + 6*s_data[z][y + unit][x] - s_data[z][y + 3*unit][x]
+                                     + 3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 16;
+                         else
+                             pred = (3*s_data[z][y - unit][x] + 6*s_data[z][y + unit][x] - s_data[z][y + 3*unit][x]) / 8;
+                     }
+                     else if (interp_y == 1){
+                         if(interp_x == 4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (-s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 8;
+                         else if (interp_x == 2)
+                             pred = (3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 8;
+                         else if (interp_x == 1)
+                             pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]
+                                     + s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 4;
+                         else 
+                             pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                     }
+                     else{
+                         if(interp_x == 4)
+                             pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                       s_data[z][y][x - unit],
+                                                       s_data[z][y][x + unit],
+                                                       s_data[z][y][x + 3*unit]);
+                         else if (interp_x == 3)
+                             pred = (-s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 8;
+                         else if (interp_x == 2)
+                             pred = (3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 8;
+                         else if (interp_x == 1)
+                             pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                         else 
+                             pred = (s_data[z][y - unit][x] + s_data[z][y][x - unit] - s_data[z][y - unit][x - unit]);
+                     }
+                 }
+             }
+ 
+             if CONSTEXPR (CUBE) {  //
+                 auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z);
+                 auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y);
+                 auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x);
+ 
+                 if(interp_z == 4){
+                     if(interp_y == 4){
+                         if(interp_x == 4){
+                             pred = (cubic_interpolator(s_data[z - 3*unit][y][x],
+                                                          s_data[z - unit][y][x],
+                                                          s_data[z + unit][y][x],
+                                                          s_data[z+ 3*unit][y][x]) +
+                                     cubic_interpolator(s_data[z][y - 3*unit][x],
+                                                          s_data[z][y - unit][x],
+                                                          s_data[z][y + unit][x],
+                                                          s_data[z][y + 3*unit][x]) +
+                                     cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                          s_data[z][y][x - unit],
+                                                          s_data[z][y][x + unit],
+                                                          s_data[z][y][x + 3*unit])
+                                     ) / 3;
+                         }
+                         else{
+                             pred = (cubic_interpolator(s_data[z - 3*unit][y][x],
+                                                          s_data[z - unit][y][x],
+                                                          s_data[z + unit][y][x],
+                                                          s_data[z+ 3*unit][y][x]) +
+                                     cubic_interpolator(s_data[z][y - 3*unit][x],
+                                                          s_data[z][y - unit][x],
+                                                          s_data[z][y + unit][x],
+                                                          s_data[z][y + 3*unit][x])
+                                     ) / 2;
+                         }
+                     }
+                     else if(interp_x == 4){
+                         pred = (cubic_interpolator(s_data[z - 3*unit][y][x],
+                                                          s_data[z - unit][y][x],
+                                                          s_data[z + unit][y][x],
+                                                          s_data[z+ 3*unit][y][x]) +
+                                 cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                      s_data[z][y][x - unit],
+                                                      s_data[z][y][x + unit],
+                                                      s_data[z][y][x + 3*unit])
+                                 ) / 2;
+ 
+                     }
+                     else{
+                         pred = cubic_interpolator(s_data[z - 3*unit][y][x],
+                                                          s_data[z - unit][y][x],
+                                                          s_data[z + unit][y][x],
+                                                          s_data[z+ 3*unit][y][x]);
+                     }
+                 }
+ 
+                 else if(interp_y == 4){
+                     
+                     if(interp_x == 4){
+                         pred = (cubic_interpolator(s_data[z][y - 3*unit][x],
+                                                          s_data[z][y - unit][x],
+                                                          s_data[z][y + unit][x],
+                                                          s_data[z][y+ 3*unit][x]) +
+                                 cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                      s_data[z][y][x - unit],
+                                                      s_data[z][y][x + unit],
+                                                      s_data[z][y][x + 3*unit])
+                                 ) / 2;
+ 
+                     }
+                     else{
+                         pred = cubic_interpolator(s_data[z][y - 3*unit][x],
+                                                          s_data[z][y - unit][x],
+                                                          s_data[z][y + unit][x],
+                                                          s_data[z][y+ 3*unit][x]);
+                     }
+                 }
+                 else{
+                     if(interp_x == 4)
+                         pred = cubic_interpolator(s_data[z][y][x - 3*unit],
+                                                   s_data[z][y][x - unit],
+                                                   s_data[z][y][x + unit],
+                                                   s_data[z][y][x + 3*unit]);
+                     else if (interp_x == 3)
+                         pred = (-s_data[z][y][x - 3*unit] + 6*s_data[z][y][x - unit] + 3*s_data[z][y][x + unit]) / 8;
+                     else if (interp_x == 2)
+                         pred = (3*s_data[z][y][x - unit] + 6*s_data[z][y][x + unit] - s_data[z][y][x + 3*unit]) / 8;
+                     else if (interp_x == 1)
+                         pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                     else 
+                         pred = s_data[z][y][x - unit];///to revise;
+ 
+ 
+                 }
+ 
+             }
+ 
+ 
+                 
+             
+             
+ 
+             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
+                 
+                 auto          err = s_data[z][y][x] - pred;
+                 decltype(err) code;
+                 // TODO unsafe, did not deal with the out-of-cap case
+                 {
+                     code = fabs(err) * eb_r + 1;
+                     code = err < 0 ? -code : code;
+                     code = int(code / 2) + radius;
+                 }
+                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
+                 s_data[z][y][x]  = pred + (code - radius) * ebx2;
+                 
+ 
+             }
+             else {  // TODO == DECOMPRESSS and static_assert
+                 auto code       = s_ectrl[z][y][x];
+                 s_data[z][y][x] = pred + (code - radius) * ebx2;
+             }
+         }
+     };
+     // -------------------------------------------------------------------------------- //
+ 
+     if CONSTEXPR (COARSEN) {
+         constexpr auto TOTAL = NUM_ELE;
+             for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
+                 auto [x,y,z]    = xyzmap(_tix, unit);
+                 run(x, y, z);
+             }
+         
+     }
+     else {
+         auto [x,y,z]    = xyzmap(TIX, unit);
+         
+ 
+      //   printf("%d %d %d\n", x,y,z);
+         run(x, y, z);
+     }
+     __syncthreads();
+ }
+ 
+
  template <
      typename T1, typename T2, typename FP, int SPLINE_DIM, int AnchorBlockSizeX,
      int AnchorBlockSizeY, int AnchorBlockSizeZ,
@@ -899,7 +1461,111 @@
    auto zhollow_reverse = [] __device__(int _tiz, int unit) -> int {
      return unit * (_tiz * 2);
    };
- 
+   
+   auto xyzmap_line_16b_1u = [] __device__(int _tix, int unit) -> std::tuple<int,int,int> {
+    constexpr auto N = 8;
+    constexpr auto L = N*(N+1)*(N+1); 
+    constexpr auto Q = (N+1)*(N+1); 
+    auto group = _tix / L ;
+    auto m = _tix % L ;
+    auto i = m / Q;
+    auto j = (m % Q) / (N+1);
+    auto k = (m % Q) % (N+1);
+    if(group==0)
+        return std::make_tuple(2*i+1,2*j,2*k);
+    else if (group==1)
+        return std::make_tuple(2*k,2*i+1,2*j);
+    else
+        return std::make_tuple(2*j,2*k,2*i+1);
+
+};
+
+auto xyzmap_face_16b_1u = [] __device__(int _tix, int unit) -> std::tuple<int,int,int> {
+    constexpr auto N = 8;
+    constexpr auto L = N*N*(N+1);
+    constexpr auto Q = N*N; 
+    auto group = _tix / L ;
+    auto m = _tix % L ;
+    auto i = m / Q;
+    auto j = (m % Q) / N;
+    auto k = (m % Q) % N;
+    if(group==0)
+        return std::make_tuple(2*i,2*j+1,2*k+1);
+    else if (group==1)
+        return std::make_tuple(2*k+1,2*i,2*j+1);
+    else
+        return std::make_tuple(2*j+1,2*k+1,2*i);
+
+};
+
+ auto xyzmap_cube_16b_1u = [] __device__(int _tix, int unit) -> std::tuple<int,int,int> {
+    constexpr auto N = 8;
+    constexpr auto Q = N * N; 
+    auto i = _tix / Q;
+    auto j = (_tix % Q) / N;
+    auto k = (_tix % Q) % N;
+    return std::make_tuple(2*i+1,2*j+1,2*k+1);
+
+};
+
+auto xyzmap_line_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,int,int> {
+    constexpr auto N = 4;
+    constexpr auto L = N*(N+1)*(N+1); 
+    constexpr auto Q = (N+1)*(N+1); 
+    auto group = _tix / L ;
+    auto m = _tix % L ;
+    auto i = m / Q;
+    auto j = (m % Q) / (N+1);
+    auto k = (m % Q) % (N+1);
+    if(group==0)
+        return std::make_tuple(4*i+2,4*j,4*k);
+    else if (group==1)
+        return std::make_tuple(4*k,4*i+2,4*j);
+    else
+        return std::make_tuple(4*j,4*k,4*i+2);
+
+};
+
+auto xyzmap_face_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,int,int> {
+    constexpr auto N = 4;
+    constexpr auto L = N*N*(N+1);
+    constexpr auto Q = N*N; 
+    auto group = _tix / L ;
+    auto m = _tix % L ;
+    auto i = m / Q;
+    auto j = (m % Q) / N;
+    auto k = (m % Q) % N;
+    if(group==0)
+        return std::make_tuple(4*i,4*j+2,4*k+2);
+    else if (group==1)
+        return std::make_tuple(4*k+2,4*i,4*j+2);
+    else
+        return std::make_tuple(4*j+2,4*k+2,4*i);
+
+};
+
+  auto xyzmap_cube_16b_2u = [] __device__(int _tix, int unit) -> std::tuple<int,int,int> {
+    constexpr auto N = 4;
+    constexpr auto Q = N * N; 
+    auto i = _tix / Q;
+    auto j = (_tix % Q) / N;
+    auto k = (_tix % Q) % N;
+    return std::make_tuple(4*i+2,4*j+2,4*k+2);
+
+  };
+
+
+  auto nan_cubic_interp = [] __device__ (T1 a, T1 b, T1 c, T1 d) -> T1{
+      return (-a+9*b+9*c-9*d) / 16;
+  };
+
+  auto nat_cubic_interp = [] __device__ (T1 a, T1 b, T1 c, T1 d) -> T1{
+      return (-3*a+23*b+23*c-3*d) / 40;
+  };
+
+
+
+
    constexpr auto COARSEN = true;
    constexpr auto NO_COARSEN = false;
    constexpr auto BORDER_INCLUSIVE = true;
@@ -931,7 +1597,7 @@
     for(int unit = max_unit; unit >= 1; unit /= 2){
       // if(threadIdx.x == 0 && blockIdx.x + blockIdx.y + blockIdx.z == 0) printf("unit=%d\n", unit);
       calc_eb(unit);
-      if(unit < AnchorBlockSizeX){
+      if(unit > 2){
      interpolate_stage<
          T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
          numAnchorBlockX,  // Number of Anchor blocks along X
@@ -945,8 +1611,6 @@
          zhollow_reverse, unit, unit_x / 2, unit_y / 2, unit_z / 2, cur_eb_r, cur_ebx2, radius,
          intp_param.interpolators[0], numAnchorBlockX * AnchorBlockSizeX / unit_x, numAnchorBlockY * AnchorBlockSizeY / unit_y + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
          unit_x /= 2;
-      }
-    if(unit < AnchorBlockSizeY){
      interpolate_stage<
          T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
          numAnchorBlockX,  // Number of Anchor blocks along X
@@ -960,8 +1624,6 @@
          zyellow_reverse, unit, unit_x, unit_y / 2, unit_z / 2, unit_y / 2, unit_z / 2,  cur_eb_r, cur_ebx2, radius,
          intp_param.interpolators[1], numAnchorBlockX * AnchorBlockSizeX / unit_x + (SPLINE_DIM >= 1), numAnchorBlockY * AnchorBlockSizeY / unit_y, NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z + (SPLINE_DIM >= 3));
           unit_y /= 2;
-        }
-    if(unit < AnchorBlockSizeZ){
     interpolate_stage<
         T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
         numAnchorBlockX,  // Number of Anchor blocks along X
@@ -975,7 +1637,85 @@
         zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,
         intp_param.interpolators[2], numAnchorBlockX * AnchorBlockSizeX / unit_x + (SPLINE_DIM >= 1), numAnchorBlockY * AnchorBlockSizeY / unit_y + (SPLINE_DIM >= 2), NO_COARSEN, numAnchorBlockZ * AnchorBlockSizeZ / unit_z);
       unit_z /= 2;
-    }
+      }
+      else if(unit == 2){
+        if(intp_param.interpolators[0]==0){
+ 
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_line_16b_2u), //
+              true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_face_16b_2u), //
+              false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_cube_16b_2u), //
+              false, false, true, LINEAR_BLOCK_SIZE,64 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+  
+      }
+      else{
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_line_16b_2u), //
+              true, false, false, LINEAR_BLOCK_SIZE,300 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_face_16b_2u), //
+              false, true, false, LINEAR_BLOCK_SIZE,240 ,NO_COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_cube_16b_2u), //
+              false, false, true, LINEAR_BLOCK_SIZE,64 ,NO_COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_2u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+          
+  
+      }
+      }
+      else{
+        if(intp_param.interpolators[0]==0){
+ 
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_line_16b_1u), //
+              true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_face_16b_1u), //
+              false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_cube_16b_1u), //
+              false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp);
+  
+      }
+      else{
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_line_16b_1u), //
+              true, false, false, LINEAR_BLOCK_SIZE,1944 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_line_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_face_16b_1u), //
+              false, true, false, LINEAR_BLOCK_SIZE,1728 ,COARSEN, BORDER_INCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_face_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+  
+          interpolate_stage_md<
+              T1, T2, FP, decltype(xyzmap_cube_16b_1u), //
+              false, false, true, LINEAR_BLOCK_SIZE,512 ,COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(
+              s_data, s_ectrl,data_size, xyzmap_cube_16b_1u, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp);
+          
+  
+      }
+  
+      }
+
    }
   
  }
