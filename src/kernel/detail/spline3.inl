@@ -1185,30 +1185,30 @@ __forceinline__ __device__ void interpolate_stage_md(
                         *((T1*)s_data + s_id_1[1]), 
                         *((T1*)s_data + s_id_1[2]), 
                         *((T1*)s_data + s_id_1[3]));
-                    // } else if (interp_1 == 3 && interp_2 == 3) {
-                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
-                    //     pred /= 2;
-                    // } else if (interp_1 == 3 && interp_2 == 2) {
-                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
-                    //     pred /= 2;
-                    // } else if (interp_1 == 3 && interp_2 < 2) {
-                    //     pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
-                    // } else if (interp_1 == 2 && interp_2 == 3) {
-                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                    //     pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                    //     pred /= 2;
-                    // } else if (interp_1 == 2 && interp_2 == 2) {
-                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                    //     pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                    //     pred /= 2;
-                    // } else if (interp_1 == 2 && interp_2 < 2) {
-                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                    // } else if (interp_1 <= 1 && interp_2 == 3) {
-                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                    // } else if (interp_1 <= 1 && interp_2 == 2) {
-                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    } else if (interp_1 == 3 && interp_2 == 3) {
+                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 3 && interp_2 == 2) {
+                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 3 && interp_2 < 2) {
+                        pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    } else if (interp_1 == 2 && interp_2 == 3) {
+                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                        pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 2 && interp_2 == 2) {
+                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                        pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 2 && interp_2 < 2) {
+                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    } else if (interp_1 <= 1 && interp_2 == 3) {
+                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    } else if (interp_1 <= 1 && interp_2 == 2) {
+                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
                     } else if (interp_1 == 1 && interp_2 >= 1) {
                         pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
                         pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
@@ -2986,12 +2986,12 @@ __forceinline__ __device__ void interpolate_stage_md_att(
                     pred = cubic_interpolator(tmp0, tmp1, tmp2, tmp3);
                     
                 }
-                else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
-                    pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
-                }
-                else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
-                    pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
-                }
+                // else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
+                //     pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
+                // }
+                // else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
+                //     pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
+                // }
                 else if ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5)) {
                     pred = (tmp1 + tmp2) / 2;
                 }
@@ -3153,7 +3153,7 @@ __forceinline__ __device__ void interpolate_stage_md_att(
                         pred = (-(*((T*)s_data + s_id_2[0]))+6*(*((T*)s_data + s_id_2[1])) + 3*(*((T*)s_data + s_id_2[2]))) / 8;
                     } else if (interp_1 <= 1 && interp_2 == 2) {
                         pred = (3*(*((T*)s_data + s_id_2[1]))+6*(*((T*)s_data + s_id_2[2])) - (*((T*)s_data + s_id_2[3]))) / 8;
-                    } else if (interp_1 == 1 && interp_2 == 1) {
+                    } else if (interp_1 == 1 && interp_2 >= 1) {
                         pred = ((*((T*)s_data + s_id_2[1]))+(*((T*)s_data + s_id_2[2]))) / 2;
                         pred += ((*((T*)s_data + s_id_1[1]))+(*((T*)s_data + s_id_1[2]))) / 2;
                         pred /= 2;
