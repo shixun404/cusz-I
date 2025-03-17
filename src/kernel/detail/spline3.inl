@@ -1042,12 +1042,12 @@ __forceinline__ __device__ void interpolate_stage_md(
                     pred = cubic_interpolator(tmp0, tmp1, tmp2, tmp3);
                     
                 }
-                else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
-                    pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
-                }
-                else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
-                    pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
-                }
+                // else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
+                //     pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
+                // }
+                // else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
+                //     pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
+                // }
                 else if ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5)) {
                     pred = (tmp1 + tmp2) / 2;
                 }
@@ -1185,38 +1185,38 @@ __forceinline__ __device__ void interpolate_stage_md(
                         *((T1*)s_data + s_id_1[1]), 
                         *((T1*)s_data + s_id_1[2]), 
                         *((T1*)s_data + s_id_1[3]));
-                    } else if (interp_1 == 3 && interp_2 == 3) {
-                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
-                        pred /= 2;
-                    } else if (interp_1 == 3 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
-                        pred /= 2;
-                    } else if (interp_1 == 3 && interp_2 < 2) {
-                        pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
-                    } else if (interp_1 == 2 && interp_2 == 3) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                        pred /= 2;
-                    } else if (interp_1 == 2 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                        pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                        pred /= 2;
-                    } else if (interp_1 == 2 && interp_2 < 2) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                    } else if (interp_1 <= 1 && interp_2 == 3) {
-                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                    } else if (interp_1 <= 1 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                    } else if (interp_1 == 1 && interp_2 == 1) {
+                    // } else if (interp_1 == 3 && interp_2 == 3) {
+                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 3 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 3 && interp_2 < 2) {
+                    //     pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    // } else if (interp_1 == 2 && interp_2 == 3) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 2 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    //     pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 2 && interp_2 < 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    // } else if (interp_1 <= 1 && interp_2 == 3) {
+                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    // } else if (interp_1 <= 1 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    } else if (interp_1 == 1 && interp_2 != 1) {
                         pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
                         pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
                         pred /= 2;
                     } else if (interp_1 == 1 && interp_2 < 1) {
                         
                         pred = ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
-                    } else if (interp_1 == 0 && interp_2 == 1) {
+                    } else if (interp_1 != 1 && interp_2 == 1) {
                         pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
                     }
                     else{
@@ -2173,31 +2173,6 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
 
         }
     }
-
-    // iteration 3
-    /*
-    */
-  //  if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
-   // printf("lv1\n");
-    
-
-
-     /******************************************************************************
-     test only: last step inclusive
-     ******************************************************************************/
-    // interpolate_stage<
-    //     T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
-    //     false, false, true, LINEAR_BLOCK_SIZE, 33, 4, COARSEN, 9, BORDER_INCLUSIVE, WORKFLOW>(
-    //     s_data, s_ectrl, xhollow, yhollow, zhollow, unit, eb_r, ebx2, radius);
-    /******************************************************************************
-     production
-     ******************************************************************************/
-
-    /******************************************************************************
-     test only: print a block
-     ******************************************************************************/
-    // if (TIX == 0 and BIX == 7 and BIY == 47 and BIZ == 15) { spline3d_print_block_from_GPU(s_ectrl); }
-   //  if (TIX == 0 and BIX == 4 and BIY == 20 and BIZ == 20) { spline3d_print_block_from_GPU(s_data); }
 }
 
 /********************************************************************************
