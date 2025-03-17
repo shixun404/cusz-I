@@ -1209,14 +1209,14 @@ __forceinline__ __device__ void interpolate_stage_md(
                     //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
                     // } else if (interp_1 <= 1 && interp_2 == 2) {
                     //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                    } else if (interp_1 == 1 && interp_2 != 1) {
+                    } else if (interp_1 == 1 && interp_2 >= 1) {
                         pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
                         pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
                         pred /= 2;
                     } else if (interp_1 == 1 && interp_2 < 1) {
                         
                         pred = ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
-                    } else if (interp_1 != 1 && interp_2 == 1) {
+                    } else if (interp_1 >= 1 && interp_2 == 1) {
                         pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
                     }
                     else{
