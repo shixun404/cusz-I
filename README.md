@@ -1,153 +1,117 @@
 <!-- <h3 align="center"><img src="https://user-images.githubusercontent.com/10354752/81179956-05860600-8f70-11ea-8b01-856f29b9e8b2.jpg" width="150"></h3> -->
 
 <h3 align="center">
-Research Paper Artifacts
+SC' 24 Research Paper Snapshot
 <br>
-cuSZ-I: High-Fidelity Error-Bounded Lossy Compression for Scientific Data on GPUs
+cuSZ-<i>i</i>: High-Ratio Scientific Lossy Compression on
+GPUs with Optimized Multi-Level Interpolation
 </h3>
 
 <p align="center">
 <a href="./LICENSE"><img src="https://img.shields.io/badge/License-BSD%203--Clause-blue.svg"></a>
 </p>
 
-The research paper artifacts serve the reproducting purpose. The artifacts are developed by the paper authors, Jinyang Liu, Jiannan Tian, and Shixun Wu.
+Th cuSZ-*i* work is collaboration of Jinyang Liu, Jiannan Tian, and Shixun Wu.
+(The final paper will come to SC '24 proceedings.) 
+This work covers
+- spline-interpolation-based high-ratio data compression and high-quality data reconstruction
+- compresion ratio boost from incorporating the synergetic lossless encoding
 
+This repository is a fork of pSZ/cuSZ for development and is a part of the research paper artifacts.
 
-<h3 align="center">
-build from source code
-</h3>
-
-- NVIDIA GPU with CUDA 11.3 onward
-    <!-- - see detailed compatibility matrix below
-    - Spack installation can work for 11.0 onward -->
-- cmake 3.18 onward
-- C++17 enabled compiler, GCC 9 onward
-
-<b>To build cuSZ-I (cuSZ)</b>
-
-```bash
-# Example architectures (";" to separate multiple SM versions)
-# "80" <- A100; "86" <- A4000; RTX 30 series
-# Please also refer to https://github.com/szcompressor/cuSZ/wiki/Build-and-Install for more detailed SM version listing
-# Install to [/path/to/install/dir]
-
-git clone https://github.com/Meso272/cusz-I.git cusz-interp
-cd cusz-interp && mkdir build && cd build
-
-cmake .. \
-    -DPSZ_BACKEND=cuda \
-    -DPSZ_BUILD_EXAMPLES=on \
-    -DCMAKE_CUDA_ARCHITECTURES="70;80;86" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_COLOR_DIAGNOSTICS=on \
-#    -DCMAKE_INSTALL_PREFIX=[/path/to/install/dir]
-make -j
-# make install # uncomment `-DCMAKE_INSTALL_PREFIX=...` to install to system PATH
-# `ctest` to perform testing
-```
-
-<b>To build cuZFP</b>
-
-```bash
-git clone https://github.com/LLNL/zfp.git
-cd zfp && mkdir build && cd build
-cmake .. \
-    -DZFP_WITH_CUDA=on \
-    -DCMAKE_CUDA_ARCHITECTURES="80;86" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=[/path/to/install/dir]
-make -j
-make install
-```
-
-<b>To build cuSZp</b>
-
-```bash
-git clone https://github.com/szcompressor/cuSZp.git
-cd cuSZp && mkdir build && cd build
-cmake .. \
-    -DCMAKE_CUDA_ARCHITECTURES="80;86" \
-    -DCMAKE_BUILD_TYPE=Release
-    -DCMAKE_INSTALL_PREFIX=[/path/to/install/dir]
-make -j
-make install
-```
-
+- To reproduce the results of our [SC '24 paper](https://arxiv.org/abs/2312.05492), please refer to the repository of [artifacts](https://github.com/jtian0/24_SC_artifacts).
+- Please also refer to pSZ/cuSZ's [main repository](https://github.com/szcompressor/cuSZ) for more information.
 
 <details>
 <summary>
-Detailed lookup: CUDA GPU architectures (SM version) and representative GPUs.
+Here is a chart to compare cuSZ-<i>i</i> with the basic framework (cuSZ) and its other variants. (Click to expand.)
 </summary>
 
-NVIDIA CUDA architectures and names and representative GPUs are listed below. 
-More details can be found at [CUDA GPUs](https://developer.nvidia.com/cuda-gpus).
+cuSZ and its variants use variable techniques to balance the need for data-reconstruction quality, compression ratio, and data-processing speed. A quick comparison is given below.
 
+Notably, cuSZ (Tian et al., '20, '21) as the basic framework provides a balanced compression ratio and quality, while FZ-GPU (Zhang, Tian et al., '23) and SZp-CUDA/GSZ (Huang et al., '23, '24) prioritize data processing speed. cuSZ+ (hi-ratio) is an outcome of data compressibility research to demonstrate that certain methods (e.g., RLE) can work better in highly compressible cases (Tian et al., '21). The latest art, cuSZ-i (Liu, Tian, Wu et al., '24), attempts to utilize the QoZ-like methods (Liu et al., '22) to significantly enhance the data-reconstruction quality and the compression ratio.
 
-| SM id  | arch.  | grade/segment         | GPU product example       |
-| ------ | ------ | --------------------- | ------------------------- |
-| 60     | Pascal | HPC/ML                | P100                      |
-| 70     | Volta  | HPC/ML                | V100                      |
-| 75     | Turing | consumer/professional | RTX 20?0, Quadro RTX ?000 |
-| 80     | Ampere | HPC/ML                | A100                      |
-| 86     | Ampere | consumer/professional | RTX 30?0, RTX A?000       |
-| 89 `*` | Ada    | consumer/professional | RTX 40?0, RTX ?000        |
-| 90 `*` | Hopper | HPC/ML                | H100                      |
+```
+                    prediction &                 statistics          lossless encoding          lossless encoding
+                    quantization                                     passs (1)                  pass (2)
 
-`*` as of CUDA 11.8
+                  +----------------------+      +-----------+      +------------------+       +-----------------+
+CPU-SZ     -----> | predictor {ℓ, lr, S} | ---> | histogram | ---> | ui2 Huffman enc. | ----> | DEFLATE (LZ+HF) |
+'16, '17-ℓ, '18-lr, '21-S, '22-QoZ ------+      +-----------+      +------------------+       +-----------------+
+(Di and Franck, Tao et al., Liang et al. Zhao et al., Liu et al.)
+
+                  +----------------------+      +-----------+      +------------------+
+cuSZ       -----> | predictor ℓ-(1,2,3)D | ---> | histogram | ---> | ui2 Huffman enc. | ----> ( n/a )
+'20, '21          +----------------------+      +-----------+      +------------------+
+(Tian et al.)
+                  +----------------------+      +-----------+      +-------------------+      +---------+
+cuSZ+        ---> | predictor ℓ-(1,2,3)D | ---> | histogram | ---> | de-redundancy RLE | ---> | HF enc. |
+hi-ratio '21      +----------------------+      +-----------+      +-------------------+      +---------+
+(Tian et al.)
+                  +----------------------+                         +---------------+
+FZ-GPU '23   ---> | predictor ℓ-(1,2,3)D | ---> ( n/a ) ---------> | de-redundancy | -------> ( n/a )
+(Zhang, Tian et al.) --------------------+                         +---------------+
+
+                  [ single kernel ]------------------------------------------------+           
+SZp-CUDA -------> | predictor ℓ-1D   ---------> ( n/a ) --------->   de-redundancy | -------> ( n/a )
+'23, '24          +----------------------------------------------------------------+           
+(Huang et al., Huang et al.)
+
+                  +----------------+            +-----------+      +------------------+       +---------------+
+cuSZ-i '24   ---> | predictor S-3D | ---------> | histogram | ---> | ui2 Huffman enc. | ----> | de-redundancy |
+(Liu, Tian, Wu et al.) ------------+            +-----------+      +------------------+       +---------------+
+
+ℓ: Lorenzo predictor; lr: linear-regression predictor; S: spline-interpolative predictor
+```
 
 </details>
 
+<br>
 
-<h3 align="center">
-data source
-</h3>
-
-All mentioned data in the research paper but RTM data are available on 
-
-- [SDRB](https://sdrbench.github.io): Miranda, Nyx, QMCPack, S3D
-- [JHTDB](http://turbulence.pha.jhu.edu): Turbulence
-
-<h3 align="center">
-run
-</h3>
-
-Note that `cusz` has been changed for the artifacts by
-
-- changing the binary name to `cuszi`, and 
-- using `spline` as the default predictor (whereas `lorenzo` is the default for `cusz`)
+If you mention cuSZ-*i* that priorizes `data quality` and `compression ratio` in your paper, please kindly cite using `\cite{liu_tian_wu2024cuszi}` and the BibTeX entries below (or standalone [`.bib` file](doc/cite-cuszi.bib)).
 
 
-```bash
-# run cusz-interpolation using spline predictor
-cuszi -t f32 -m r2r -e [ErrorBound] -i [/PATH/TO/DATA] -l [X]x[Y]x[Z] -z --report time
-cuszi -i [/PATH/TO/DATA].cusza -x --report time --compare ${CESM}
-```
+In addition, for the full context, the basic framework is covered in (PACT '20: cuSZ) ([arXiv](https://arxiv.org/abs/2007.09625)) and (CLUSTER '21: cuSZ+) ([arXiv](https://arxiv.org/abs/2105.12912)) covers
+- basic framework: (fine-grained) *N*-D prediction-based error-controling "construction" + (coarse-grained) lossless encoding
+- optimization in throughput, featuring fine-grained *N*-D "reconstruction"
+- optimization in compression ratio, when data is deemed as "smooth"
 
-```bash
-# run cusz-lorenzo
-cuszi -t f32 -m r2r -e [ErrorBound] -i [/PATH/TO/DATA] -l [X]x[Y]x[Z] -z --report time --predictor lorenzo
-cuszi -i [/PATH/TO/DATA].cusza -x --report time --compare ${CESM}
-```
+If you found the whole pipeline is important, please kindly cite using `\cite{tian2020cusz,tian2021cuszplus,liu_tian_wu2024cuszi}` (for three papers) and the BibTeX entries below (or standalone [`.bib` file](doc/cite-cuszi.bib)).
 
-```bash
-# run FZ-GPU
-./fz-gpu [/PATH/TO/DATA] [X] [Y] [Z] [ErrorBound]
-```
+<br>
 
-```bash
-# run cuSZp (draft)
-./cuSZp_gpu_f32_api [/PATH/TO/DATA] REL [ErrorBound]
-```
+```bibtex
+@inproceedings{liu_tian_wu2024cuszi,
+      title = {{{\scshape cuSZ}-{\itshape i}: High-Ratio scientific lossy compression on
+             GPUs with optimized multi-level interpolation}},
+     author = {Liu, Jinyang and Tian, Jiannan and Wu, Shixun and Di, Sheng and Zhang, Boyuan and Underwood, Robert and Huang, Yafan and Huang, Jiajun and Zhao, Kai and Li, Guanpeng and Tao, Dingwen and Chen, Zizhong and Cappello, Franck},
+       year = {2024}, month = {11}, isbn = {979-8-3503-5291-7},
+       note = {Co-first authors: Jinyang Liu, Jiannan Tian, and Shixun Wu},
+        url = {https://doi.ieeecomputersociety.org/10.1109/SC41406.2024.00019}, 
+  booktitle = {SC '24: Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis},
+     series = {SC '24}, address = {Atlanta, GA, USA}}
 
-```bash
-# run cuzfp (draft)
-./zfp -f -i [/PATH/TO/DATA] -3 [Z] [Y] [X] -r [Rate] -x cuda
+@inproceedings{tian2020cusz,
+      title = {{{\textsc cuSZ}: An efficient GPU-based error-bounded lossy compression framework for scientific data}},
+     author = {Tian, Jiannan and Di, Sheng and Zhao, Kai and Rivera, Cody and Fulp, Megan Hickman and Underwood, Robert and Jin, Sian and Liang, Xin and Calhoun, Jon and Tao, Dingwen and Cappello, Franck},
+       year = {2020}, month = {10},
+        doi = {10.1145/3410463.3414624}, isbn = {9781450380751},
+  booktitle = {Proceedings of the ACM International Conference on Parallel Architectures and Compilation Techniques},
+     series = {PACT '20}, address = {Atlanta (virtual event), GA, USA}}
+
+@inproceedings{tian2021cuszplus,
+      title = {Optimizing error-bounded lossy compression for scientific data on GPUs},
+     author = {Tian, Jiannan and Di, Sheng and Yu, Xiaodong and Rivera, Cody and Zhao, Kai and Jin, Sian and Feng, Yunhe and Liang, Xin and Tao, Dingwen and Cappello, Franck},
+       year = {2021}, month = {09},
+        doi = {10.1109/Cluster48925.2021.00047},
+  booktitle = {2021 IEEE International Conference on Cluster Computing (CLUSTER)},
+     series = {CLUSTER '21}, address = {Portland (virtual event), OR, USA}}
 ```
 
 <h3 align="center">
 acknowledgements
 </h3>
 
-This R&D is supported by the Exascale Computing Project (ECP), Project Number: 17-SC-20-SC, a collaborative effort of two DOE organizations – the Office of Science and the National Nuclear Security Administration, responsible for the planning and preparation of a capable exascale ecosystem. This repository is based upon work supported by the U.S. Department of Energy, Office of Science, under contract DE-AC02-06CH11357, and also supported by the National Science Foundation under Grants [CCF-1617488](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1617488), [CCF-1619253](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1619253), [OAC-2003709](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2003709), [OAC-1948447/2034169](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2034169), and [OAC-2003624/2042084](https://www.nsf.gov/awardsearch/showAward?AWD_ID=2042084).
+This research was supported by the U.S. Department of Energy, Office of Science, Advanced Scientific Computing Research (ASCR), under contracts DE-AC02-06CH11357. This work was also supported by the National Science Foundation (Grant Nos. 2003709, 2303064, 2104023, 2247080, 2247060, 2312673, 2311875, and 2311876). We also acknowledge the computing resources provided by Argonne Leadership Computing Facility (ALCF) and Advanced Cyberinfrastructure Coordination Ecosystem—Purdue Anvil through Services & Support (ACCESS).
 
 ![acknowledgement](https://user-images.githubusercontent.com/10354752/196348936-f0909251-1c2f-4c53-b599-08642dcc2089.png)
