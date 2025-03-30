@@ -1,5 +1,0 @@
-#include "kernel/hist.hh"
-#include "kernel/histsp.hh"
-#include "kernel/lrz.hh"
-#include "kernel/spv.hh"
-#include "kernel/spline.hh"
