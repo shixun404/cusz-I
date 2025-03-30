@@ -133,7 +133,7 @@ int spline_construct(
             data->template st3<dim3>(),
             profiling_errors->dptr());
       STOP_GPUEVENT_RECORDING(stream);
-      CHECK_GPU(GpuStreamSync(stream));
+      CHECK_GPU(GpuStreamSync(stream)); 
       TIME_ELAPSED_GPUEVENT(&att_time);
       DESTROY_GPUEVENT_PAIR;
       //profiling_errors->control({D2H});
