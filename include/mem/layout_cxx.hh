@@ -37,7 +37,6 @@ class pszmempool_cxx {
   Compact *compact;
 
   pszmem_cxx<B> *_compressed;  // compressed
-  B *_compressed_rre1;  // final compressed
 
   size_t len;
   int radius, bklen;
@@ -74,8 +73,7 @@ TPL POOL::pszmempool_cxx(u4 x, int _radius, u4 y, u4 z)
 
   // for spline
   constexpr auto BLK = 16;
-  //constexpr auto ERR_HISTO_LEN = 6;
-  constexpr auto ERR_HISTO_LEN = 36;
+  constexpr auto ERR_HISTO_LEN = 6;
 
   _compressed = new pszmem_cxx<B>(len * 1.2, 1, 1, "compressed");
 

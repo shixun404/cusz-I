@@ -1,6 +1,6 @@
 #pragma once
 
-void RRE1_COMPRESS(uint8_t* input, size_t insize, uint8_t** output, int* outsize, float* time, void * stream);
-void RRE1_DECOMPRESS(uint8_t* input, uint8_t** output, int* pre_size, float* time);
-// void RTR_COMPRESS(uint8_t* input, size_t insize, uint8_t** output, int* outsize, float* time);
-// void RTR_DECOMPRESS(uint8_t* input, uint8_t** output, int* pre_size, float* time);
+void TCMS_COMPRESS(void* input, size_t insize, uint8_t** output, size_t* outsize, size_t* tcms_padding_bytes, float* time);
+void TCMS_DECOMPRESS(uint8_t* input, void** output, size_t tcms_padding_bytes, float* time);
+void BITR_COMPRESS(void* input, size_t insize, uint8_t** output, size_t* outsize, size_t* bitr_padding_bytes, float* time);
+void BITR_DECOMPRESS(uint8_t* input, void** output, size_t bitr_padding_bytes, float* time);

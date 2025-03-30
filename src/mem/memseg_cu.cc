@@ -132,7 +132,7 @@ void pszmem_h2d_cudaasync(pszmem* m, void* stream)
 }
 
 void pszmem_d2h_cuda(pszmem* m)
-{
+{ 
   CHECK_GPU(cudaMemcpy(m->h, m->d, m->bytes, cudaMemcpyDeviceToHost));
 }
 

@@ -72,7 +72,7 @@ static void view(
     string const& compare)
 {
   auto len = psz_utils::uncompressed_len(header);
-  auto compressd_bytes = header->compressed_len;
+  auto compressd_bytes = psz_utils::filesize(header);
 
   auto compare_on_gpu = [&]() {
     cmp->control({MallocHost, Malloc})
