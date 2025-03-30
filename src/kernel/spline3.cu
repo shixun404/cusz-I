@@ -130,8 +130,6 @@ int spline_construct(
    
     
     
-
-    
   
   }
 
