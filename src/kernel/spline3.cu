@@ -100,7 +100,7 @@ int spline_construct(
    else if(rel_eb>=e5)
     intp_param.alpha=a5+(a4-a5)*(rel_eb-e5)/(e4-e5);
    else
-    intp_param.alpha=a5;
+    intp_param.alpha=a5; 
     if(intp_param.auto_tuning==1){
 
       CREATE_GPUEVENT_PAIR;
