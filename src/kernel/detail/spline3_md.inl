@@ -299,11 +299,15 @@ __device__ void c_reset_scratch_data(
     volatile T1 s_data[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                        [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
                        [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
-    volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+    volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                         [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
                         [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
     int radius)
 {
+    volatile T2* s_ectrl = reinterpret_cast<volatile T2*>(&s_ectrl_[0][0][0]);
+    auto x_size = (AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1));
+    auto y_size = (AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2));
+    auto z_size = (AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3));
     for (auto _tix = TIX; _tix < (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) *
             (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)) * (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3));
             _tix += LINEAR_BLOCK_SIZE) {
@@ -316,7 +320,7 @@ __device__ void c_reset_scratch_data(
         s_data[z][y][x] = 0;
         if (x % AnchorBlockSizeX == 0 and y % AnchorBlockSizeY == 0 and
             z % AnchorBlockSizeZ == 0)
-          s_ectrl[z][y][x] = radius;
+          *(s_ectrl + x_size * y_size * (z / 2) + x_size * (y / 2) + (x / 2)) = radius;
     }
     __syncthreads();
 }
@@ -403,7 +407,7 @@ int SPLINE_DIM = 2, int AnchorBlockSizeX = 8,
      int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
       int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void x_reset_scratch_data(
-    volatile T1 s_xdata[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+    volatile T1 s_xdata_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                         [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
                         [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
     volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
@@ -413,6 +417,10 @@ __device__ void x_reset_scratch_data(
     DIM3        anchor_size,  //
     STRIDE3     anchor_leap)
 {
+    volatile T1* s_xdata = reinterpret_cast<volatile T1*>(&s_xdata_[0][0][0]);
+    auto x_size = (AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1));
+    auto y_size = (AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2));
+    auto z_size = (AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3));
     for (auto _tix = TIX; _tix <  (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) * (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)) * (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)); _tix += LINEAR_BLOCK_SIZE) {
         auto x = (_tix % (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)));
         auto y = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1))) %
@@ -426,14 +434,14 @@ __device__ void x_reset_scratch_data(
          ******************************************************************************/
         if (x % AnchorBlockSizeX == 0 and y % AnchorBlockSizeY == 0 and
             z % AnchorBlockSizeZ == 0) {
-            s_xdata[z][y][x] = 0;
+                *(s_xdata + x_size * y_size * (z / 2) + x_size *( y / 2) + (x / 2)) = 0;
 
             auto ax = ((x / AnchorBlockSizeX) + BIX * numAnchorBlockX);
             auto ay = ((y / AnchorBlockSizeY) + BIY * numAnchorBlockY);
             auto az = ((z / AnchorBlockSizeZ) + BIZ * numAnchorBlockZ);
 
             if (ax < anchor_size.x and ay < anchor_size.y and az < anchor_size.z)
-                s_xdata[z][y][x] = anchor[ax + ay * anchor_leap.y + az * anchor_leap.z];
+                *(s_xdata + x_size * y_size * (z / 2) + x_size *( y / 2) + (x / 2)) = anchor[ax + ay * anchor_leap.y + az * anchor_leap.z];
 
         }
 
@@ -449,14 +457,17 @@ int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
 int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
 int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void global2shmem_data(T1* data, DIM3 data_size, STRIDE3 data_leap,
-    volatile T2 s_data[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+    volatile T2 s_data_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                     [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
                     [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)])
 {
+    volatile T2* s_data = reinterpret_cast<volatile T2*>(&s_data_[0][0][0]);
     constexpr auto TOTAL = (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) *
                         (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)) * 
                         (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3));
-
+    auto x_size = (AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1));
+    auto y_size = (AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2));
+    auto z_size = (AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3));
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
         auto x = (_tix % (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)));
         auto y = (_tix / (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1))) %
@@ -468,7 +479,13 @@ __device__ void global2shmem_data(T1* data, DIM3 data_size, STRIDE3 data_leap,
         auto gz  = (z + BIZ * (AnchorBlockSizeZ * numAnchorBlockZ));
         auto gid = gx + gy * data_leap.y + gz * data_leap.z;
 
-        if (gx < data_size.x and gy < data_size.y and gz < data_size.z) s_data[z][y][x] = data[gid];
+        if (gx < data_size.x and gy < data_size.y and gz < data_size.z){
+            if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) *(s_data + x_size * y_size * z / 2 + x_size * y / 2 + x / 2) = data[gid];
+            else if(x % 2 != 0 and y % 2 == 0) *(s_data + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2) = data[gid];
+            else if(x % 2 == 0 and y % 2 != 0) *(s_data + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2)) = data[gid];
+            else *(s_data + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2)) = data[gid];
+        }
+        
 
     }
     __syncthreads();
@@ -553,7 +570,7 @@ int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
 int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
 int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void global2shmem_fuse(E* ectrl, dim3 ectrl_size, dim3 ectrl_leap, T* scattered_outlier, 
-    volatile T s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+    volatile T s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
     [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
     [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
     volatile STRIDE3 grid_leaps[LEVEL + 1],volatile size_t prefix_nums[LEVEL + 1])
@@ -562,6 +579,10 @@ __device__ void global2shmem_fuse(E* ectrl, dim3 ectrl_size, dim3 ectrl_leap, T*
     constexpr auto TOTAL = (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)) *
     (AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)) *
     (AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3));
+    auto x_size_2 = (AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1));
+    auto y_size_2 = (AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2));
+    auto z_size_2 = (AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3));
+    volatile T* s_ectrl = reinterpret_cast<volatile T*>(&s_ectrl_[0][0][0]);
 
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
         auto x   = (_tix % (AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)));
@@ -586,8 +607,12 @@ __device__ void global2shmem_fuse(E* ectrl, dim3 ectrl_size, dim3 ectrl_leap, T*
             if(level < LEVEL){//non-anchor
                 gid += prefix_nums[level] - ((gz + 1) >> 1) * grid_leaps[level + 1].z - (gz % 2 == 0) * ((gy + 1) >> 1) * grid_leaps[level + 1].y - (gz % 2 == 0 && gy % 2 == 0) * ((gx + 1) >> 1);
             }
+            if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) *(s_ectrl + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            else if(x % 2 != 0 and y % 2 == 0) *(s_ectrl + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            else if(x % 2 == 0 and y % 2 != 0) *(s_ectrl + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2)) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            else *(s_ectrl + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2)) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            
 
-            s_ectrl[z][y][x] = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
         }
     }
     __syncthreads();
@@ -602,14 +627,18 @@ int numAnchorBlockY,
 int numAnchorBlockZ,
 int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void
-shmem2global_data(volatile T1 s_buf[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+shmem2global_data(volatile T1 s_buf_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
 [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
 [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)], T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap)
 {
+    volatile T1* s_buf = reinterpret_cast<volatile T1*>(&s_buf_[0][0][0]);
     auto x_size = AnchorBlockSizeX * numAnchorBlockX + (BIX == GDX - 1) * (SPLINE_DIM >= 1);
     auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1) * (SPLINE_DIM >= 2);
     auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1) * (SPLINE_DIM >= 3);
     auto TOTAL = x_size * y_size * z_size;
+    auto x_size_2 = (AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1));
+    auto y_size_2 = (AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2));
+    auto z_size_2 = (AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3));
 
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
         auto x   = (_tix % x_size);
@@ -620,7 +649,17 @@ shmem2global_data(volatile T1 s_buf[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE
         auto gz  = (z + BIZ * AnchorBlockSizeZ * numAnchorBlockZ);
         auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
 
-        if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z) dram_buf[gid] = s_buf[z][y][x];
+        if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z){
+            if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) dram_buf[gid] = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2);
+            else if(x % 2 != 0 and y % 2 == 0) dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
+            else if(x % 2 == 0 and y % 2 != 0) dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2));
+            else dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2));
+
+            // if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) candidate = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) ;
+            // else if(x % 2 != 0 and y % 2 == 0) candidate = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
+            // else if(x % 2 != 0 and y % 2 == 0) candidate = *(s_buf + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2));
+            // else candidate = *(s_buf + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2));
+        }
     }
     __syncthreads();
 }
@@ -635,7 +674,7 @@ int numAnchorBlockY = 1,  // Number of Anchor blocks along Y
 int numAnchorBlockZ = 1,  // Number of Anchor blocks along Z
 int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void
-shmem2global_data_with_compaction(volatile T1 s_buf[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+shmem2global_data_with_compaction(volatile T1 s_buf_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
 [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
 [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)], T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap, int radius,volatile STRIDE3 grid_leaps[LEVEL + 1],volatile size_t prefix_nums[LEVEL + 1], T1* dram_compactval = nullptr, uint32_t* dram_compactidx = nullptr, uint32_t* dram_compactnum = nullptr)
 {
@@ -643,6 +682,10 @@ shmem2global_data_with_compaction(volatile T1 s_buf[AnchorBlockSizeZ * numAnchor
     auto y_size = AnchorBlockSizeY * numAnchorBlockY + (BIY == GDY - 1) * (SPLINE_DIM >= 2);
     auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (BIZ == GDZ - 1) * (SPLINE_DIM >= 3);
     auto TOTAL = x_size * y_size * z_size;
+    auto x_size_2 = (AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1));
+    auto y_size_2 = (AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2));
+    auto z_size_2 = (AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3));
+    volatile T1* s_buf = reinterpret_cast<volatile T1*>(&s_buf_[0][0][0]);
 
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
         auto x   = (_tix % x_size);
@@ -652,8 +695,13 @@ shmem2global_data_with_compaction(volatile T1 s_buf[AnchorBlockSizeZ * numAnchor
         auto gy  = (y + BIY * AnchorBlockSizeY * numAnchorBlockY);
         auto gz  = (z + BIZ * AnchorBlockSizeZ * numAnchorBlockZ);
         //auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
+        T1 candidate;
 
-        auto candidate = s_buf[z][y][x];
+        if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) candidate = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) ;
+        else if(x % 2 != 0 and y % 2 == 0) candidate = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
+        else if(x % 2 == 0 and y % 2 != 0) candidate = *(s_buf + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2));
+        else candidate = *(s_buf + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2));
+
         bool quantizable = (candidate >= 0) and (candidate < 2*radius);
 
         if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z) {
@@ -910,10 +958,10 @@ template <
     bool WORKFLOW,
     typename INTERP>
 __forceinline__ __device__ void interpolate_stage_md(
-    volatile T1 s_data[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+    volatile T1 s_data_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
     [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
     [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
-volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
  [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
  [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
     DIM3    data_size,
@@ -925,6 +973,8 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
     INTERP cubic_interpolator,
     int NUM_ELE)
 {
+    volatile T1* s_data = reinterpret_cast<volatile T1*>(&s_data_[0][0][0]);
+    volatile T2* s_ectrl = reinterpret_cast<volatile T2*>(&s_ectrl_[0][0][0]);
     // static_assert(COARSEN or (NUM_ELE <= BLOCK_DIM_SIZE), "block oversized");
     static_assert((LINE or FACE or CUBE) == true, "must be one hot");
     static_assert((LINE and FACE) == false, "must be only one hot (1)");
@@ -970,9 +1020,9 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 auto input_gs = data_size.x;
 
                 auto right_bound = AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1);
-                auto x_size = AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1);
-                auto y_size = AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2);
-                auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3);
+                auto x_size = AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1);
+                auto y_size = AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2);
+                auto z_size = AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3);
                 
                 if (I_Z){
                     input_x = z;
@@ -1004,21 +1054,21 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 id_[3] = input_x + 3 * unit;
                 id_[3] = id_[3] < right_bound ? id_[3] : 0;
                 
-                s_id[0] = x_size * y_size * z + x_size * y + id_[0];
-                s_id[1] = x_size * y_size * z + x_size * y + id_[1];
-                s_id[2] = x_size * y_size * z + x_size * y + id_[2];
-                s_id[3] = x_size * y_size * z + x_size * y + id_[3];
+                s_id[0] = x_size * y_size * z / 2 + x_size * y / 2 + id_[0] / 2;
+                s_id[1] = x_size * y_size * z / 2 + x_size * y / 2 + id_[1] / 2;
+                s_id[2] = x_size * y_size * z / 2 + x_size * y / 2 + id_[2] / 2;
+                s_id[3] = x_size * y_size * z / 2 + x_size * y / 2 + id_[3] / 2;
                 if (I_Z){
-                s_id[0] = x_size * y_size * id_[0] + x_size * y + x;
-                s_id[1] = x_size * y_size * id_[1] + x_size * y + x;
-                s_id[2] = x_size * y_size * id_[2] + x_size * y + x;
-                s_id[3] = x_size * y_size * id_[3] + x_size * y + x;
+                s_id[0] = x_size * y_size * id_[0] / 2 + x_size * y / 2 + x / 2;
+                s_id[1] = x_size * y_size * id_[1] / 2 + x_size * y / 2 + x / 2;
+                s_id[2] = x_size * y_size * id_[2] / 2 + x_size * y / 2 + x / 2;
+                s_id[3] = x_size * y_size * id_[3] / 2 + x_size * y / 2 + x / 2;
                 }
                 else if (I_Y){
-                    s_id[0] = x_size * y_size * z + x_size * id_[0] + x;
-                    s_id[1] = x_size * y_size * z + x_size * id_[1] + x;
-                    s_id[2] = x_size * y_size * z + x_size * id_[2] + x;
-                    s_id[3] = x_size * y_size * z + x_size * id_[3] + x;
+                    s_id[0] = x_size * y_size * z / 2 + x_size * id_[0] / 2 + x / 2;
+                    s_id[1] = x_size * y_size * z / 2 + x_size * id_[1] / 2 + x / 2;
+                    s_id[2] = x_size * y_size * z / 2 + x_size * id_[2] / 2 + x / 2;
+                    s_id[3] = x_size * y_size * z / 2 + x_size * id_[3] / 2 + x / 2;
                 }
 
                 T1 tmp_[4];
@@ -1063,6 +1113,9 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 return (b == 3) ? ((f == 3) ? 4 : ((f == 1) ? 3 : 0)) 
                                 : ((f == 3) ? 2 : ((f == 1) ? 1 : 0));
             };
+            auto x_size = AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1);
+            auto y_size = AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2);
+            auto z_size = AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3);
             if CONSTEXPR (FACE) {  //
                // if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
                //     printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
@@ -1076,51 +1129,49 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 int x_1,BI_1,GD_1,gx_1,gs_1;
                 int x_2,BI_2,GD_2,gx_2,gs_2;
                 int s_id_1[4], s_id_2[4];
-                auto x_size = AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1);
-                auto y_size = AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2);
-                auto z_size = AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3);
+               
                 if (I_YZ){
                    
                  x_1 = z,BI_1 = BIZ, GD_1 = GDZ, gx_1 = global_z,gs_1 = data_size.z;
                  x_2 = y,BI_2 = BIY, GD_2 = GDY, gx_2 = global_y, gs_2 = data_size.y;
-                 s_id_1[0] = x_size * y_size * id_z[0] + x_size * y + x;
-                 s_id_1[1] = x_size * y_size * id_z[1] + x_size * y + x;
-                 s_id_1[2] = x_size * y_size * id_z[2] + x_size * y + x;
-                 s_id_1[3] = x_size * y_size * id_z[3] + x_size * y + x;
-                 s_id_2[0] = x_size * y_size * z + x_size * id_y[0] + x;
-                 s_id_2[1] = x_size * y_size * z + x_size * id_y[1] + x;
-                 s_id_2[2] = x_size * y_size * z + x_size * id_y[2] + x;
-                 s_id_2[3] = x_size * y_size * z + x_size * id_y[3] + x;
-                 pred = s_data[id_z[1]][id_y[1]][x];
+                 s_id_1[0] = x_size * y_size * id_z[0] / 2 + x_size * y / 2 + x / 2;
+                 s_id_1[1] = x_size * y_size * id_z[1] / 2 + x_size * y / 2 + x / 2;
+                 s_id_1[2] = x_size * y_size * id_z[2] / 2 + x_size * y / 2 + x / 2;
+                 s_id_1[3] = x_size * y_size * id_z[3] / 2 + x_size * y / 2 + x / 2;
+                 s_id_2[0] = x_size * y_size * z / 2 + x_size * id_y[0] / 2 + x / 2;
+                 s_id_2[1] = x_size * y_size * z / 2 + x_size * id_y[1] / 2 + x / 2;
+                 s_id_2[2] = x_size * y_size * z / 2 + x_size * id_y[2] / 2 + x / 2;
+                 s_id_2[3] = x_size * y_size * z / 2 + x_size * id_y[3] / 2 + x / 2;
+                 pred = *(s_data + x_size * y_size * (id_z[1] / 2) + x_size * (id_y[1] / 2) + (x / 2));
 
                 }
                 else if (I_XZ){
                     x_1 = z,BI_1 = BIZ, GD_1 = GDZ, gx_1 = global_z,gs_1 = data_size.z;
                     x_2 = x,BI_2 = BIX, GD_2 = GDX, gx_2 = global_x, gs_2 = data_size.x;
-                    s_id_1[0] = x_size * y_size * id_z[0] + x_size * y + x;
-                    s_id_1[1] = x_size * y_size * id_z[1] + x_size * y + x;
-                    s_id_1[2] = x_size * y_size * id_z[2] + x_size * y + x;
-                    s_id_1[3] = x_size * y_size * id_z[3] + x_size * y + x;
+                    s_id_1[0] = x_size * y_size * id_z[0] / 2 + x_size * y / 2 + x / 2;
+                    s_id_1[1] = x_size * y_size * id_z[1] / 2 + x_size * y / 2 + x / 2;
+                    s_id_1[2] = x_size * y_size * id_z[2] / 2 + x_size * y / 2 + x / 2;
+                    s_id_1[3] = x_size * y_size * id_z[3] / 2 + x_size * y / 2 + x / 2;
                     
-                    s_id_2[0] = x_size * y_size * z + x_size * y + id_x[0];
-                    s_id_2[1] = x_size * y_size * z + x_size * y + id_x[1];
-                    s_id_2[2] = x_size * y_size * z + x_size * y + id_x[2];
-                    s_id_2[3] = x_size * y_size * z + x_size * y + id_x[3];
-                    pred = s_data[id_z[1]][y][id_x[1]];
+                    s_id_2[0] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[0] / 2;
+                    s_id_2[1] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[1] / 2;
+                    s_id_2[2] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[2] / 2;
+                    s_id_2[3] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[3] / 2;
+                    pred = *(s_data + x_size * y_size * (id_z[1] / 2) + x_size * (y / 2) + (id_x[1] / 2));
                     
                 }
                 else{
                     x_1 = y,BI_1 = BIY, GD_1 = GDY, gx_1 = global_y, gs_1 = data_size.y;
                     x_2 = x,BI_2 = BIX, GD_2 = GDX, gx_2 = global_x, gs_2 = data_size.x;
-                    s_id_1[0] = x_size * y_size * z + x_size * id_y[0] + x;
-                    s_id_1[1] = x_size * y_size * z + x_size * id_y[1] + x;
-                    s_id_1[2] = x_size * y_size * z + x_size * id_y[2] + x;
-                    s_id_1[3] = x_size * y_size * z + x_size * id_y[3] + x;
-                    s_id_2[0] = x_size * y_size * z + x_size * y + id_x[0];
-                    s_id_2[1] = x_size * y_size * z + x_size * y + id_x[1];
-                    s_id_2[2] = x_size * y_size * z + x_size * y + id_x[2];
-                    s_id_2[3] = x_size * y_size * z + x_size * y + id_x[3];
-                    pred = s_data[z][id_y[1]][id_x[1]];
+                    s_id_1[0] = x_size * y_size * z / 2 + x_size * id_y[0] / 2 + x / 2;
+                    s_id_1[1] = x_size * y_size * z / 2 + x_size * id_y[1] / 2 + x / 2;
+                    s_id_1[2] = x_size * y_size * z / 2 + x_size * id_y[2] / 2 + x / 2;
+                    s_id_1[3] = x_size * y_size * z / 2 + x_size * id_y[3] / 2 + x / 2;
+                    s_id_2[0] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[0] / 2;
+                    s_id_2[1] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[1] / 2;
+                    s_id_2[2] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[2] / 2;
+                    s_id_2[3] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[3] / 2;
+                    pred = *(s_data + x_size * y_size * (z / 2) + x_size * (id_y[1] / 2) + (id_x[1] / 2));
                 }
 
                     auto interp_1 = get_interp_order(x_1,BI_1,GD_1,gx_1,gs_1);
@@ -1195,18 +1246,18 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 
                 #pragma unroll
                 for(int id_itr = 0; id_itr < 4; ++id_itr){
-                 tmp_x[id_itr] = s_data[z][y][id_x[id_itr]]; 
+                 tmp_x[id_itr] = *(s_data + x_size * y_size * (z / 2) + x_size * (y / 2) + (id_x[id_itr] / 2)); 
                 }
                 if(interp_z == 4){
                     #pragma unroll
                     for(int id_itr = 0; id_itr < 4; ++id_itr){
-                        tmp_z[id_itr] = s_data[id_z[id_itr]][y][x];
+                        tmp_z[id_itr] = *(s_data + x_size * y_size * (id_z[id_itr] / 2) + x_size * (y / 2) + x / 2);
                        }
                 }
                 if(interp_y == 4){
                     #pragma unroll
                     for(int id_itr = 0; id_itr < 4; ++id_itr){
-                     tmp_y[id_itr] = s_data[z][id_y[id_itr]][x]; 
+                     tmp_y[id_itr] = *(s_data + x_size * y_size * (z / 2) + x_size * (id_y[id_itr] / 2) + (x / 2)); 
                     }
                 }
 
@@ -1240,10 +1291,10 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 pred = (interp_z != 4 && interp_y != 4 && interp_x == 1) ? pred_x[4]: pred;
                 // pred = (interp_z != 4 && interp_y != 4 && interp_x == 0) ? pred_x[0]: pred;
             }
-
+            int offset = x_size * y_size * (z / 2) + x_size * (y / 2) + (x / 2);
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
-                
-                auto          err = s_data[z][y][x] - pred;
+               
+                auto          err = *(s_data + offset) - pred;
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
                 {
@@ -1251,17 +1302,17 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                     code = err < 0 ? -code : code;
                     code = int(code / 2) + radius;
                 }
-                s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
+                *(s_ectrl + offset) = code;  // TODO double check if unsigned type works
               
-                s_data[z][y][x]  = pred + (code - radius) * ebx2;
+                *(s_data + offset)  = pred + (code - radius) * ebx2;
                 
 
             }
             else {  // TODO == DECOMPRESSS and static_assert
 
                 
-                auto code       = s_ectrl[z][y][x];
-                s_data[z][y][x] = pred + (code - radius) * ebx2;
+                auto code       = *(s_ectrl + offset);
+                *(s_data + offset) = pred + (code - radius) * ebx2;
             }
         }
     };
@@ -1270,19 +1321,450 @@ volatile T2 s_ectrl[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
     if CONSTEXPR (COARSEN) {
         auto TOTAL = NUM_ELE;
         for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-            auto [x,y,z]    = xyzmap(_tix, unit);
+            int group = 0;
+            auto [x,y,z]    = xyzmap(_tix, unit, &group);
             run(x, y, z);
         }
         
     }
     else {
         if(TIX<NUM_ELE){
-            auto [x,y,z]    = xyzmap(TIX, unit);
+            int group = 0;
+            auto [x,y,z]    = xyzmap(TIX, unit, &group);
             run(x, y, z);
         }
     }
     __syncthreads();
 }
+
+template <
+    typename T1,
+    typename T2,
+    typename FP,
+    int SPLINE_DIM, int AnchorBlockSizeX,
+    int AnchorBlockSizeY, int AnchorBlockSizeZ,
+    int numAnchorBlockX,
+    int numAnchorBlockY,
+    int numAnchorBlockZ,
+    typename LAMBDA,
+    bool LINE,
+    bool FACE,
+    bool CUBE,
+    int  LINEAR_BLOCK_SIZE,
+    bool COARSEN,
+    bool BORDER_INCLUSIVE,
+    bool WORKFLOW,
+    typename INTERP>
+__forceinline__ __device__ void interpolate_stage_md_1(
+    volatile T1 s_data_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+    [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
+    [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
+volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
+ [AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2)]
+ [AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1)],
+    DIM3    data_size,
+    LAMBDA xyzmap,
+    int         unit,
+    FP          eb_r,
+    FP          ebx2,
+    int         radius,
+    INTERP cubic_interpolator,
+    int NUM_ELE)
+{
+    volatile T1* s_data = reinterpret_cast<volatile T1*>(&s_data_[0][0][0]);
+    volatile T2* s_ectrl = reinterpret_cast<volatile T2*>(&s_ectrl_[0][0][0]);
+    // static_assert(COARSEN or (NUM_ELE <= BLOCK_DIM_SIZE), "block oversized");
+    static_assert((LINE or FACE or CUBE) == true, "must be one hot");
+    static_assert((LINE and FACE) == false, "must be only one hot (1)");
+    static_assert((LINE and CUBE) == false, "must be only one hot (2)");
+    static_assert((FACE and CUBE) == false, "must be only one hot (3)");
+
+    auto run = [&](auto x, auto y, auto z, auto group) {
+
+        if (xyz_predicate<SPLINE_DIM,
+            AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+            numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, BORDER_INCLUSIVE>(x, y, z,data_size)) {
+            T1 pred = 0;
+            auto global_x = BIX * AnchorBlockSizeX * numAnchorBlockX + x;
+            auto global_y = BIY * AnchorBlockSizeY * numAnchorBlockY + y;
+            auto global_z = BIZ * AnchorBlockSizeZ * numAnchorBlockZ + z;  
+
+           T1 tmp_z[4], tmp_y[4], tmp_x[4];
+           int id_z[4], id_y[4], id_x[4];
+           id_z[0] = (z - 3 * unit >= 0) ? z - 3 * unit : 0;
+           id_z[1] = (z - unit >= 0) ? z - unit : 0;
+           id_z[2] = (z + unit <= AnchorBlockSizeZ * numAnchorBlockZ) ? z + unit : 0;
+           id_z[3] = (z + 3 * unit <= AnchorBlockSizeZ * numAnchorBlockZ) ? z + 3 * unit : 0;
+           
+           id_y[0] = (y - 3 * unit >= 0) ? y - 3 * unit : 0;
+           id_y[1] = (y - unit >= 0) ? y - unit : 0;
+           id_y[2] = (y + unit <= AnchorBlockSizeY * numAnchorBlockY) ? y + unit : 0;
+           id_y[3] = (y + 3 * unit <= AnchorBlockSizeY * numAnchorBlockY) ? y + 3 * unit : 0;
+           
+           id_x[0] = (x - 3 * unit >= 0) ? x - 3 * unit : 0;
+           id_x[1] = (x - unit >= 0) ? x - unit : 0;
+           id_x[2] = (x + unit <= AnchorBlockSizeX * numAnchorBlockX) ? x + unit : 0;
+           id_x[3] = (x + 3 * unit <= AnchorBlockSizeX * numAnchorBlockX) ? x + 3 * unit : 0;
+           
+            if CONSTEXPR (LINE) {
+                bool I_Y = (y % (2*unit) )> 0; 
+                bool I_Z = (z % (2*unit) )> 0; 
+
+                pred = 0;
+                auto input_x = x;
+                auto input_BI = BIX;
+                auto input_GD = GDX;
+                auto input_gx = global_x;
+                auto input_gs = data_size.x;
+
+                auto right_bound = AnchorBlockSizeX * numAnchorBlockX + (SPLINE_DIM >= 1);
+                auto x_size = AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1);
+                auto y_size = AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2);
+                auto z_size = AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3);
+                
+                if (I_Z){
+                    input_x = z;
+                    input_BI = BIZ;
+                    input_GD = GDZ;
+                    input_gx = global_z;
+                    input_gs = data_size.z;
+                    right_bound = AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3);
+                }
+                else if (I_Y){
+                    input_x = y;
+                    input_BI = BIY;
+                    input_GD = GDY;
+                    input_gx = global_y;
+                    input_gs = data_size.y;
+                    right_bound = AnchorBlockSizeY * numAnchorBlockY + (SPLINE_DIM >= 2);
+                }
+                
+                int id_[4], s_id[4];
+                id_[0] =  input_x - 3 * unit;
+                id_[0] =  id_[0] >= 0 ? id_[0] : 0;
+            
+                id_[1] = input_x - unit;
+                id_[1] = id_[1] >= 0 ? id_[1] : 0;
+            
+                id_[2] = input_x + unit;
+                id_[2] = id_[2] < right_bound ? id_[2] : 0;
+                
+                id_[3] = input_x + 3 * unit;
+                id_[3] = id_[3] < right_bound ? id_[3] : 0;
+                
+                s_id[0] = x_size * y_size * z / 2 + x_size * y / 2 + id_[0] / 2;
+                s_id[1] = x_size * y_size * z / 2 + x_size * y / 2 + id_[1] / 2;
+                s_id[2] = x_size * y_size * z / 2 + x_size * y / 2 + id_[2] / 2;
+                s_id[3] = x_size * y_size * z / 2 + x_size * y / 2 + id_[3] / 2;
+                if (I_Z){
+                s_id[0] = x_size * y_size * id_[0] / 2 + x_size * y / 2 + x / 2;
+                s_id[1] = x_size * y_size * id_[1] / 2 + x_size * y / 2 + x / 2;
+                s_id[2] = x_size * y_size * id_[2] / 2 + x_size * y / 2 + x / 2;
+                s_id[3] = x_size * y_size * id_[3] / 2 + x_size * y / 2 + x / 2;
+                }
+                else if (I_Y){
+                    s_id[0] = x_size * y_size * z / 2 + x_size * id_[0] / 2 + x / 2;
+                    s_id[1] = x_size * y_size * z / 2 + x_size * id_[1] / 2 + x / 2;
+                    s_id[2] = x_size * y_size * z / 2 + x_size * id_[2] / 2 + x / 2;
+                    s_id[3] = x_size * y_size * z / 2 + x_size * id_[3] / 2 + x / 2;
+                }
+
+                T1 tmp_[4];
+            
+                bool case1 = (input_BI != input_GD - 1);
+                bool case2 = (input_x >= 3 * unit);
+                bool case3 = (input_x + 3 * unit <= AnchorBlockSizeX * numAnchorBlockX);
+                bool case4 = (input_gx + 3 * unit < input_gs);
+                bool case5 = (input_gx + unit < input_gs);
+                
+                
+                // 预加载 shared memory 数据到寄存器
+                T1 tmp0 = *((T1*)s_data + s_id[0]); 
+                T1 tmp1 = *((T1*)s_data + s_id[1]); 
+                T1 tmp2 = *((T1*)s_data + s_id[2]); 
+                T1 tmp3 = *((T1*)s_data + s_id[3]); 
+    
+                // 初始预测值
+                pred = tmp1;
+    
+                // 计算不同 case 对应的 pred
+                if ( (case1 && case2 && case3) || (!case1 && case2 && case3 && case4)) {
+                    pred = cubic_interpolator(tmp0, tmp1, tmp2, tmp3);
+                    
+                }
+                else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
+                    pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
+                }
+                else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
+                    pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
+                }
+                else if ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5)) {
+                    pred = (tmp1 + tmp2) / 2;
+                }
+
+            }
+            
+            auto get_interp_order = [&](auto x, auto BI, auto GD, auto gx, auto gs){
+                int b = (x >= 3 * unit) ? 3 : 1;
+                int f = ((x + 3 * unit <= AnchorBlockSizeX * numAnchorBlockX) && ((BI != GD - 1) || (gx + 3 * unit < gs))) ? 3 :
+                (((BI != GD - 1) || (gx + unit < gs)) ? 1 : 0);
+
+                return (b == 3) ? ((f == 3) ? 4 : ((f == 1) ? 3 : 0)) 
+                                : ((f == 3) ? 2 : ((f == 1) ? 1 : 0));
+            };
+            auto x_size = AnchorBlockSizeX * numAnchorBlockX / 2 + (SPLINE_DIM >= 1);
+            auto y_size = AnchorBlockSizeY * numAnchorBlockY / 2 + (SPLINE_DIM >= 2);
+            auto z_size = AnchorBlockSizeZ * numAnchorBlockZ / 2 + (SPLINE_DIM >= 3);
+            if CONSTEXPR (FACE) {  //
+               // if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
+               //     printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
+              //  }
+
+                bool I_YZ = (x % (2*unit) ) == 0;
+                bool I_XZ = (y % (2*unit ) )== 0;
+
+                //if(BIX == 10 and BIY == 12 and BIZ == 0 and x==13 and y==6 and z==9)
+               //     printf("face %d %d\n", I_YZ,I_XZ);
+                int x_1,BI_1,GD_1,gx_1,gs_1;
+                int x_2,BI_2,GD_2,gx_2,gs_2;
+                int s_id_1[4], s_id_2[4];
+              
+                // if (I_YZ){
+                //  x_1 = z,BI_1 = BIZ, GD_1 = GDZ, gx_1 = global_z,gs_1 = data_size.z;
+                //  x_2 = y,BI_2 = BIY, GD_2 = GDY, gx_2 = global_y, gs_2 = data_size.y;
+                //  s_id_1[0] = x_size * y_size * id_z[0] / 2 + x_size * y / 2 + x / 2;
+                //  s_id_1[1] = x_size * y_size * id_z[1] / 2 + x_size * y / 2 + x / 2;
+                //  s_id_1[2] = x_size * y_size * id_z[2] / 2 + x_size * y / 2 + x / 2;
+                //  s_id_1[3] = x_size * y_size * id_z[3] / 2 + x_size * y / 2 + x / 2;
+                //  s_id_2[0] = x_size * y_size * z / 2 + x_size * id_y[0] / 2 + x / 2;
+                //  s_id_2[1] = x_size * y_size * z / 2 + x_size * id_y[1] / 2 + x / 2;
+                //  s_id_2[2] = x_size * y_size * z / 2 + x_size * id_y[2] / 2 + x / 2;
+                //  s_id_2[3] = x_size * y_size * z / 2 + x_size * id_y[3] / 2 + x / 2;
+
+                //  pred = *(s_data + x_size * y_size * (id_z[1] / 2) + x_size * (id_y[1] / 2) + (x / 2));
+
+                // }
+                // else if (I_XZ){
+                //     x_1 = z,BI_1 = BIZ, GD_1 = GDZ, gx_1 = global_z,gs_1 = data_size.z;
+                //     x_2 = x,BI_2 = BIX, GD_2 = GDX, gx_2 = global_x, gs_2 = data_size.x;
+                //     s_id_1[0] = x_size * y_size * id_z[0] / 2 + x_size * y / 2 + x / 2;
+                //     s_id_1[1] = x_size * y_size * id_z[1] / 2 + x_size * y / 2 + x / 2;
+                    
+                //     s_id_1[2] = x_size * y_size * id_z[2] / 2 + x_size * y / 2 + x / 2;
+                //     s_id_1[3] = x_size * y_size * id_z[3] / 2 + x_size * y / 2 + x / 2;
+                    
+                //     s_id_2[0] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[0] / 2;
+                //     s_id_2[1] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[1] / 2;
+                //     s_id_2[2] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[2] / 2;
+                //     s_id_2[3] = x_size * y_size * z / 2 + x_size * y / 2 + id_x[3] / 2;
+                //     pred = *(s_data + x_size * y_size * (id_z[1] / 2) + x_size * (y / 2) + (id_x[1] / 2));
+                //     // pred = s_data[id_z[1] / 2][y / 2][id_x[1] / 2];
+                    
+                // }
+                // else{
+
+                    
+                    x_1 = y,BI_1 = BIY, GD_1 = GDY, gx_1 = global_y, gs_1 = data_size.y;
+                    x_2 = x,BI_2 = BIX, GD_2 = GDX, gx_2 = global_x, gs_2 = data_size.x;
+                    
+                    x_size = 32;
+                    y_size = 33;
+                    s_id_1[0] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[0] / 2);
+                    s_id_1[1] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[1] / 2);
+                    s_id_1[2] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[2] / 2);
+                    s_id_1[3] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[3] / 2);
+                    
+                    x_size = 33;
+                    y_size = 32;
+                    s_id_2[0] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[0] / 2;
+                    s_id_2[1] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[1] / 2;
+                    s_id_2[2] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[2] / 2;
+                    s_id_2[3] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[3] / 2;
+                    pred = *(s_data + 33 * 33 * (z / 2) + x_size * (id_y[1] / 2) + (id_x[1] / 2));
+                    // pred = s_data[z / 2][id_y[1] / 2][id_x[1] / 2];
+                // }
+
+                    auto interp_1 = get_interp_order(x_1,BI_1,GD_1,gx_1,gs_1);
+                    auto interp_2 = get_interp_order(x_2,BI_2,GD_2,gx_2,gs_2);
+
+                    int case_num = interp_1 + interp_2 * 5;
+
+
+                    if (interp_1 == 4 && interp_2 == 4) {
+                        pred = (cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
+                        *((T1*)s_data + s_id_1[1]), 
+                        *((T1*)s_data + s_id_1[2]), 
+                        *((T1*)s_data + s_id_1[3])) +
+                         cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
+                        *((T1*)s_data + s_id_2[1]), 
+                        *((T1*)s_data + s_id_2[2]), 
+                        *((T1*)s_data + s_id_2[3]))) / 2;
+                    } else if (interp_1 != 4 && interp_2 == 4) {
+                        pred = cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
+                        *((T1*)s_data + s_id_2[1]), 
+                        *((T1*)s_data + s_id_2[2]), 
+                        *((T1*)s_data + s_id_2[3]));
+                    } else if (interp_1 == 4 && interp_2 != 4) {
+                        pred = cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
+                        *((T1*)s_data + s_id_1[1]), 
+                        *((T1*)s_data + s_id_1[2]), 
+                        *((T1*)s_data + s_id_1[3]));
+                    } else if (interp_1 == 3 && interp_2 == 3) {
+                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 3 && interp_2 == 2) {
+                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 3 && interp_2 < 2) {
+                        pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    } else if (interp_1 == 2 && interp_2 == 3) {
+                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                        pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 2 && interp_2 == 2) {
+                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                        pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        pred /= 2;
+                    } else if (interp_1 == 2 && interp_2 < 2) {
+                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    } else if (interp_1 <= 1 && interp_2 == 3) {
+                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    } else if (interp_1 <= 1 && interp_2 == 2) {
+                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    } else if (interp_1 == 1 && interp_2 == 1) {
+                        pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                        pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                        pred /= 2;
+                    } else if (interp_1 == 1 && interp_2 < 1) {
+                        
+                        pred = ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                    } else if (interp_1 == 0 && interp_2 == 1) {
+                        pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                    }
+                    else{
+                        pred = (*((T1*)s_data + s_id_1[1])) + (*((T1*)s_data + s_id_2[1])) - pred;
+                    }
+                    
+            }
+
+            if CONSTEXPR (CUBE) {  //
+                auto interp_z = get_interp_order(z,BIZ,GDZ,global_z,data_size.z);
+                auto interp_y = get_interp_order(y,BIY,GDY,global_y,data_size.y);
+                auto interp_x = get_interp_order(x,BIX,GDX,global_x,data_size.x);
+                
+                #pragma unroll
+                for(int id_itr = 0; id_itr < 4; ++id_itr){
+                //  tmp_x[id_itr] = s_data[z / 2][y / 2][id_x[id_itr] / 2]; 
+                tmp_x[id_itr] = *(s_data + x_size * y_size * (z / 2) + x_size * (y / 2) + (id_x[id_itr] / 2)); 
+                }
+                if(interp_z == 4){
+                    #pragma unroll
+                    for(int id_itr = 0; id_itr < 4; ++id_itr){
+                        // tmp_z[id_itr] = s_data[id_z[id_itr] / 2][y / 2][x / 2];
+                        tmp_z[id_itr] = *(s_data + x_size * y_size * (id_z[id_itr] / 2) + x_size * (y / 2) + x / 2);
+                       }
+                }
+                if(interp_y == 4){
+                    #pragma unroll
+                    for(int id_itr = 0; id_itr < 4; ++id_itr){
+                    //  tmp_y[id_itr] = s_data[z / 2][id_y[id_itr] / 2][x / 2]; 
+                    tmp_y[id_itr] = *(s_data + x_size * y_size * (z / 2) + x_size * (id_y[id_itr] / 2) + (x / 2)); 
+                    }
+                }
+
+
+                T1 pred_z[5], pred_y[5], pred_x[5];
+                pred_x[0] = tmp_x[1];
+                pred_x[1] = cubic_interpolator(tmp_x[0],tmp_x[1],tmp_x[2],tmp_x[3]);
+                pred_x[2] = (-tmp_x[0]+6*tmp_x[1] + 3*tmp_x[2]) / 8;
+                pred_x[3] = (3*tmp_x[1] + 6*tmp_x[2]-tmp_x[3]) / 8;
+                pred_x[4] = (tmp_x[1] + tmp_x[2]) / 2;
+                
+                pred_y[1] = cubic_interpolator(tmp_y[0],tmp_y[1],tmp_y[2],tmp_y[3]);
+
+                
+                pred_z[1] = cubic_interpolator(tmp_z[0],tmp_z[1],tmp_z[2],tmp_z[3]);
+                
+                pred = pred_x[0];
+                pred = (interp_z == 4 && interp_y == 4 && interp_x == 4) ? (pred_x[1] +  pred_y[1] + pred_z[1]) / 3 : pred;
+                
+                pred = (interp_z == 4 && interp_y == 4 && interp_x != 4) ? (pred_z[1] + pred_y[1]) / 2 : pred;
+                pred = (interp_z == 4 && interp_y != 4 && interp_x == 4) ? (pred_z[1] + pred_x[1]) / 2 : pred;
+                pred = (interp_z != 4 && interp_y == 4 && interp_x == 4) ? (pred_y[1] + pred_x[1]) / 2 : pred;
+                
+                pred = (interp_z == 4 && interp_y != 4 && interp_x != 4) ? pred_z[1]: pred;
+                pred = (interp_z != 4 && interp_y == 4 && interp_x != 4) ? pred_y[1]: pred;
+                pred = (interp_z != 4 && interp_y != 4 && interp_x == 4) ? pred_x[1]: pred;
+
+
+                pred = (interp_z != 4 && interp_y != 4 && interp_x == 3) ? pred_x[2]: pred;
+                pred = (interp_z != 4 && interp_y != 4 && interp_x == 2) ? pred_x[3]: pred;
+                pred = (interp_z != 4 && interp_y != 4 && interp_x == 1) ? pred_x[4]: pred;
+                // pred = (interp_z != 4 && interp_y != 4 && interp_x == 0) ? pred_x[0]: pred;
+            }
+           
+            int tmp_offset = 0;
+            if CONSTEXPR (LINE) {
+           
+            tmp_offset = (33 * 33 + 33 * 32 * group);
+            if(group == 0) tmp_offset += (z / 2) * 33 * 32 + 33 * (x / 2) + y / 2;
+            else tmp_offset += (z / 2) * 33 * 32 + 33 * (y / 2) + x / 2;
+            }
+            if CONSTEXPR (FACE) {
+            tmp_offset = (33 * 33 + 33 * 32 * SPLINE_DIM);
+            tmp_offset += (z / 2) * 32 * 32 + 32 * (y / 2) + x / 2;
+            }
+            s_data += tmp_offset;
+            s_ectrl += tmp_offset;
+            
+            
+            if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
+               
+                auto err = s_data[0] - pred;
+                decltype(err) code;
+                // TODO unsafe, did not deal with the out-of-cap case
+                {
+                    code = fabs(err) * eb_r + 1;
+                    code = err < 0 ? -code : code;
+                    code = int(code / 2) + radius;
+                }
+                s_ectrl[0] = code;  // TODO double check if unsigned type works
+                
+                s_data[0]  = pred + (code - radius) * ebx2;
+                
+
+            }
+            else {  // TODO == DECOMPRESSS and static_assert
+
+                
+                auto code       = s_ectrl[0];
+                s_data[0] = pred + (code - radius) * ebx2;
+            }
+        }
+    };
+    // -------------------------------------------------------------------------------- //
+
+    if CONSTEXPR (COARSEN) {
+        auto TOTAL = NUM_ELE;
+        for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
+            int group;
+            auto [x,y,z]    = xyzmap(_tix, unit, &group);
+            run(x, y, z, group);
+        }
+        
+    }
+    else {
+        if(TIX<NUM_ELE){
+            int group;
+            auto [x,y,z]    = xyzmap(TIX, unit, &group);
+            run(x, y, z, group);
+        }
+    }
+    __syncthreads();
+}
+
 
 }  // namespace
 
@@ -1397,15 +1879,15 @@ __device__ void cusz::device_api::auto_tuning_2(volatile T s_data[PROFILE_NUM_BL
 }
 
 template<int SPLINE_DIM, int BLOCKSIZE>
-__device__ std::tuple<int, int, int> xyzmap_line(int _tix, const int UNIT);
+__device__ std::tuple<int, int, int> xyzmap_line(int _tix, const int UNIT, int *group_);
 template<int SPLINE_DIM, int BLOCKSIZE>
-__device__ std::tuple<int, int, int> xyzmap_face(int _tix, const int UNIT);
+__device__ std::tuple<int, int, int> xyzmap_face(int _tix, const int UNIT, int *group_);
 template<int SPLINE_DIM, int BLOCKSIZE>
-__device__ std::tuple<int, int, int> xyzmap_cube(int _tix, const int UNIT);
+__device__ std::tuple<int, int, int> xyzmap_cube(int _tix, const int UNIT, int *group_);
 
 
 template<int SPLINE_DIM, int BLOCKSIZE>
-__device__ std::tuple<int, int, int> xyzmap_line(int _tix, const int UNIT) {
+__device__ std::tuple<int, int, int> xyzmap_line(int _tix, const int UNIT, int *group_) {
     if constexpr (SPLINE_DIM == 3) {
         auto N = BLOCKSIZE / (UNIT * 2);
         auto L = N * (N+1) * (N+1); 
@@ -1415,6 +1897,7 @@ __device__ std::tuple<int, int, int> xyzmap_line(int _tix, const int UNIT) {
         auto i = m / Q;
         auto j = (m % Q) / (N+1);
         auto k = (m % Q) % (N+1);
+        *group_ = group;
         if(group == 0)
             return std::make_tuple(2 * UNIT * i + UNIT, 2 * UNIT * j, 2 * UNIT * k);
         else if (group == 1)
@@ -1425,20 +1908,24 @@ __device__ std::tuple<int, int, int> xyzmap_line(int _tix, const int UNIT) {
     if constexpr (SPLINE_DIM == 2) {
         auto N = BLOCKSIZE / (UNIT * 2);
         auto L = N * (N+1); 
-        auto Q = (N+1); 
+        auto Q = N; 
+        auto Q_ = N + 1; 
         auto group = _tix / L ;
         auto m = _tix % L ;
-        auto i = m / Q;
-        auto j = (m % Q);
+        auto i = m % Q;
+        auto j = (m / Q);
+        auto i_ = m / Q_;
+        auto j_ = (m % Q_);
+        *group_ = group;
         if(group == 0)
             return std::make_tuple(2 * UNIT * i + UNIT, 2 * UNIT * j, 0);
         else if (group == 1)
-            return std::make_tuple(2 * UNIT * j, 2 * UNIT * i + UNIT, 0);
+            return std::make_tuple(2 * UNIT * j_, 2 * UNIT * i_ + UNIT, 0);
     }
 }
 
 template<int SPLINE_DIM, int BLOCKSIZE>
-__device__ std::tuple<int, int, int> xyzmap_face(int _tix, const int UNIT) {
+__device__ std::tuple<int, int, int> xyzmap_face(int _tix, const int UNIT, int *group_) {
     if constexpr (SPLINE_DIM == 3) {
         auto N = BLOCKSIZE / (UNIT * 2);
         auto L = N * N * (N+1);
@@ -1448,6 +1935,7 @@ __device__ std::tuple<int, int, int> xyzmap_face(int _tix, const int UNIT) {
         auto i = m / Q;
         auto j = (m % Q) / N;
         auto k = (m % Q) % N;
+        *group_ = group;
         if(group == 0)
             return std::make_tuple(2 * UNIT * i, 2 * UNIT * j + UNIT, 2 * UNIT * k + UNIT);
         else if (group == 1)
@@ -1461,16 +1949,16 @@ __device__ std::tuple<int, int, int> xyzmap_face(int _tix, const int UNIT) {
         auto Q = N * N; 
         auto group = _tix / L ;
         auto m = _tix % L ;
-        
-        auto i = (m % Q) / N;
-        auto j = (m % Q) % N;
+        *group_ = group;
+        auto i = (m % Q) % N;
+        auto j = (m % Q) / N;
         return std::make_tuple(2 * UNIT * i + UNIT, 2 * UNIT * j + UNIT, 0);
     }
 }
 
 
 template<int SPLINE_DIM, int BLOCKSIZE>
-__device__ std::tuple<int, int, int> xyzmap_cube(int _tix, const int UNIT) {
+__device__ std::tuple<int, int, int> xyzmap_cube(int _tix, const int UNIT, int *group_) {
     if constexpr (SPLINE_DIM == 3) {
         auto N = BLOCKSIZE / (UNIT * 2);
         auto Q = N * N; 
@@ -1635,19 +2123,19 @@ __device__ void cusz::device_api::spline_layout_interpolate(
                 int N_cube = N_x * N_y * N_z;
                 if(intp_param.use_natural[level_id]==0){
                     if constexpr (SPLINE_DIM >= 1)
-                    interpolate_stage_md<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>), true, false, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp, N_line);
+                    interpolate_stage_md_1<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>), true, false, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp, N_line);
                     if constexpr (SPLINE_DIM >= 2)
-                    interpolate_stage_md<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>), false, true, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp, N_face);
+                    interpolate_stage_md_1<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>), false, true, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp, N_face);
                     if constexpr (SPLINE_DIM >= 3)
-                    interpolate_stage_md<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>), false, false, true, LINEAR_BLOCK_SIZE, COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp, N_cube);
+                    interpolate_stage_md_1<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>), false, false, true, LINEAR_BLOCK_SIZE, COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nan_cubic_interp, N_cube);
                 }
                 else{
                     if constexpr (SPLINE_DIM >= 1)
-                    interpolate_stage_md<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>), true, false, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp, N_line);
+                    interpolate_stage_md_1<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>), true, false, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_line<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp, N_line);
                     if constexpr (SPLINE_DIM >= 2)
-                    interpolate_stage_md<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>), false, true, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp, N_face);
+                    interpolate_stage_md_1<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>), false, true, false, LINEAR_BLOCK_SIZE, COARSEN, BORDER_INCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_face<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp, N_face);
                     if constexpr (SPLINE_DIM >= 3)
-                    interpolate_stage_md<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>), false, false, true, LINEAR_BLOCK_SIZE, COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp, N_cube);
+                    interpolate_stage_md_1<T1, T2, FP, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, decltype(xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>), false, false, true, LINEAR_BLOCK_SIZE, COARSEN, BORDER_EXCLUSIVE, WORKFLOW>(s_data, s_ectrl,data_size, xyzmap_cube<SPLINE_DIM, AnchorBlockSizeX>, unit, cur_eb_r, cur_ebx2, radius, nat_cubic_interp, N_cube);
                 }
             }
             else{
@@ -2559,13 +3047,15 @@ __forceinline__ __device__ void interpolate_stage_md_att(
     if CONSTEXPR (COARSEN) {
         auto TOTAL = NUM_ELE;
             for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-                auto [x,y,z]    = xyzmap(_tix, unit);
+                int group;
+                auto [x,y,z]    = xyzmap(_tix, unit, &group);
                 run(x, y, z);
             }   
     }
     else {
         if(TIX<NUM_ELE){
-            auto [x,y,z]    = xyzmap(TIX, unit);
+            int group;
+            auto [x,y,z]    = xyzmap(TIX, unit, &group);
             run(x, y, z);
         }
     }
