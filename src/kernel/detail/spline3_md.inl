@@ -1567,20 +1567,20 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                     x_1 = y,BI_1 = BIY, GD_1 = GDY, gx_1 = global_y, gs_1 = data_size.y;
                     x_2 = x,BI_2 = BIX, GD_2 = GDX, gx_2 = global_x, gs_2 = data_size.x;
                     
-                    x_size = 32;
-                    y_size = 33;
-                    s_id_1[0] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[0] / 2);
-                    s_id_1[1] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[1] / 2);
-                    s_id_1[2] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[2] / 2);
-                    s_id_1[3] = 33 * 33 + x_size * y_size * (z / 2) + y_size * (x / 2) + (id_y[3] / 2);
+                    // x_size = 32;
+                    // y_size = 33;
+                    s_id_1[0] = 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + (id_y[0] / 2);
+                    s_id_1[1] = 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + (id_y[1] / 2);
+                    s_id_1[2] = 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + (id_y[2] / 2);
+                    s_id_1[3] = 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + (id_y[3] / 2);
                     
-                    x_size = 33;
-                    y_size = 32;
-                    s_id_2[0] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[0] / 2;
-                    s_id_2[1] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[1] / 2;
-                    s_id_2[2] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[2] / 2;
-                    s_id_2[3] = 33 * 33 + 33 * 32 + x_size * y_size * (z / 2) + x_size * (y / 2) + id_x[3] / 2;
-                    pred = *(s_data + 33 * 33 * (z / 2) + x_size * (id_y[1] / 2) + (id_x[1] / 2));
+                    // x_size = 33;
+                    // y_size = 32;
+                    s_id_2[0] = 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + id_x[0] / 2;
+                    s_id_2[1] = 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + id_x[1] / 2;
+                    s_id_2[2] = 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + id_x[2] / 2;
+                    s_id_2[3] = 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + id_x[3] / 2;
+                    pred = *(s_data + 33 * 33 * (z / 2) + 33 * (id_y[1] / 2) + (id_x[1] / 2));
                     // pred = s_data[z / 2][id_y[1] / 2][id_x[1] / 2];
                 // }
 
@@ -1713,16 +1713,17 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
             else tmp_offset += (z / 2) * 33 * 32 + 33 * (y / 2) + x / 2;
             }
             if CONSTEXPR (FACE) {
-            tmp_offset = (33 * 33 + 33 * 32 * SPLINE_DIM);
+            // if(TIX + BIX + BIY + BIZ == 0)printf("SPLINE_DIM=%d\n",SPLINE_DIM);
+            tmp_offset = (33 * 33 + 33 * 32 * 2);
             tmp_offset += (z / 2) * 32 * 32 + 32 * (y / 2) + x / 2;
             }
-            s_data += tmp_offset;
-            s_ectrl += tmp_offset;
+            // s_data = tmp_offset;
+            // s_ectrl += tmp_offset;
             
             
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
                
-                auto err = s_data[0] - pred;
+                auto err = s_data[tmp_offset] - pred;
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
                 {
@@ -1730,17 +1731,17 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                     code = err < 0 ? -code : code;
                     code = int(code / 2) + radius;
                 }
-                s_ectrl[0] = code;  // TODO double check if unsigned type works
+                s_ectrl[tmp_offset] = code;  // TODO double check if unsigned type works
                 
-                s_data[0]  = pred + (code - radius) * ebx2;
+                s_data[tmp_offset]  = pred + (code - radius) * ebx2;
                 
 
             }
             else {  // TODO == DECOMPRESSS and static_assert
 
                 
-                auto code       = s_ectrl[0];
-                s_data[0] = pred + (code - radius) * ebx2;
+                auto code       = s_ectrl[tmp_offset];
+                s_data[tmp_offset] = pred + (code - radius) * ebx2;
             }
         }
     };
@@ -2303,18 +2304,32 @@ __global__ void cusz::c_spline_infprecis_data(
             size_t prefix_nums[LEVEL + 1];
         } shmem;
 
-   
+        // if(TIX + BIX + BIY + BIZ == 0)
+        // if(TIX== 0)
+        // printf("PRE_COMPUTE\n");
         pre_compute<LEVEL>(ectrl_size, shmem.grid_leaps, shmem.prefix_nums);
 
+        // if(TIX + BIX + BIY + BIZ == 0)
+        // if(TIX== 0)
+        // printf("c_reset_scratch_data\n");
         c_reset_scratch_data<T, T, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
-
+        // if(TIX + BIX + BIY + BIZ == 0)
+        // if(TIX== 0)
+        // printf("global2shmem_data\n");
         global2shmem_data<T, T, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
-
+        // if(TIX + BIX + BIY + BIZ == 0)
+        // if(TIX== 0)
+        // printf("c_gather_anchor\n");
         c_gather_anchor<T, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ>(data, data_size, data_leap, anchor, anchor_leap);
+        // if(TIX + BIX + BIY + BIZ == 0)
+        // printf("spline_layout_interpolate\n");
         cusz::device_api::spline_layout_interpolate<T, T, FP, LEVEL, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
-
+            // if(TIX + BIX + BIY + BIZ == 0)
+            // if(TIX== 0)
+            // printf("shmem2global_data_with_compaction\n");
         shmem2global_data_with_compaction<T, E, LEVEL, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY,  numAnchorBlockZ, LINEAR_BLOCK_SIZE>(shmem.ectrl, ectrl, ectrl_size, ectrl_leap, radius, shmem.grid_leaps,shmem.prefix_nums, compact_val, compact_idx, compact_num);
+        // printf("c_spline_infprecis_data done\n");
     }
 }
 

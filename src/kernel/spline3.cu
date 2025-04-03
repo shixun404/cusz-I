@@ -454,6 +454,7 @@ int spline_construct(
   START_GPUEVENT_RECORDING(stream);
 
   if (l3.z == 1){
+    printf("asdasdas\n");
     auto grid_dim =
       dim3(div(l3.x, AnchorBlockSizeX * numAnchorBlockX),
           div(l3.y, AnchorBlockSizeY * numAnchorBlockY),
