@@ -480,10 +480,46 @@ __device__ void global2shmem_data(T1* data, DIM3 data_size, STRIDE3 data_leap,
         auto gid = gx + gy * data_leap.y + gz * data_leap.z;
 
         if (gx < data_size.x and gy < data_size.y and gz < data_size.z){
-            if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) *(s_data + x_size * y_size * z / 2 + x_size * y / 2 + x / 2) = data[gid];
-            else if(x % 2 != 0 and y % 2 == 0) *(s_data + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2) = data[gid];
-            else if(x % 2 == 0 and y % 2 != 0) *(s_data + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2)) = data[gid];
-            else *(s_data + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2)) = data[gid];
+            int offset =   (
+                (z % 2 == 0 && y % 2 == 0 && x % 2 == 0)
+                  ? (x_size * y_size * (z / 2)
+                     + x_size * (y / 2)
+                     + x / 2)
+                  : 0
+              )
+            + (
+                (x % 2 != 0 && y % 2 == 0)
+                  ? ( 33 * 33
+                      + 33 * 32 * (z / 2)
+                      + 33 * (x / 2)
+                      + y / 2)
+                  : 0
+              )
+            + (
+                (x % 2 == 0 && y % 2 != 0)
+                  ? ( 33 * 33
+                      + 33 * 32
+                      + 33 * 32 * (z / 2)
+                      + 33 * (y / 2)
+                      + x / 2)
+                  : 0
+              )
+            + (
+                // 上面三个条件都不满足时，进入 else 分支
+                (x % 2 != 0 && y % 2 != 0)
+                  ? ( 33 * 33
+                      + 33 * 32 * 2
+                      + 32 * 32 * (z / 2)
+                      + 32 * (y / 2)
+                      + x / 2 )
+                  : 0
+              );
+            
+            *(s_data + offset) = data[gid];
+            // if(y % 2 == 0 and x % 2 == 0) *(s_data + x_size * y_size * z / 2 + x_size * y / 2 + x / 2) = data[gid];
+            // else if(x % 2 != 0 and y % 2 == 0) *(s_data + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2) = data[gid];
+            // else if(x % 2 == 0 and y % 2 != 0) *(s_data + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2)) = data[gid];
+            // else *(s_data + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2)) = data[gid];
         }
         
 
@@ -607,10 +643,48 @@ __device__ void global2shmem_fuse(E* ectrl, dim3 ectrl_size, dim3 ectrl_leap, T*
             if(level < LEVEL){//non-anchor
                 gid += prefix_nums[level] - ((gz + 1) >> 1) * grid_leaps[level + 1].z - (gz % 2 == 0) * ((gy + 1) >> 1) * grid_leaps[level + 1].y - (gz % 2 == 0 && gy % 2 == 0) * ((gx + 1) >> 1);
             }
-            if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) *(s_ectrl + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
-            else if(x % 2 != 0 and y % 2 == 0) *(s_ectrl + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
-            else if(x % 2 == 0 and y % 2 != 0) *(s_ectrl + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2)) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
-            else *(s_ectrl + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2)) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            
+            int offset =   (
+                (z % 2 == 0 && y % 2 == 0 && x % 2 == 0)
+                  ? (x_size_2 * y_size_2 * (z / 2)
+                     + x_size_2 * (y / 2)
+                     + x / 2)
+                  : 0
+              )
+            + (
+                (x % 2 != 0 && y % 2 == 0)
+                  ? ( 33 * 33
+                      + 33 * 32 * (z / 2)
+                      + 33 * (x / 2)
+                      + y / 2)
+                  : 0
+              )
+            + (
+                (x % 2 == 0 && y % 2 != 0)
+                  ? ( 33 * 33
+                      + 33 * 32
+                      + 33 * 32 * (z / 2)
+                      + 33 * (y / 2)
+                      + x / 2)
+                  : 0
+              )
+            + (
+                // 上面三个条件都不满足时，进入 else 分支
+               (x % 2 != 0 && y % 2 != 0)
+                  ? ( 33 * 33
+                      + 33 * 32 * 2
+                      + 32 * 32 * (z / 2)
+                      + 32 * (y / 2)
+                      + x / 2 )
+                  : 0
+              );
+            
+        
+            *(s_ectrl + offset) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            // if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) *(s_ectrl + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            // else if(x % 2 != 0 and y % 2 == 0) *(s_ectrl + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            // else if(x % 2 == 0 and y % 2 != 0) *(s_ectrl + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2)) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
+            // else *(s_ectrl + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2)) = static_cast<T>(ectrl[gid]) + scattered_outlier[data_gid];
             
 
         }
@@ -650,10 +724,48 @@ shmem2global_data(volatile T1 s_buf_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLIN
         auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
 
         if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z){
-            if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) dram_buf[gid] = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2);
-            else if(x % 2 != 0 and y % 2 == 0) dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
-            else if(x % 2 == 0 and y % 2 != 0) dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2));
-            else dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2));
+            // dram_buf[gid] = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2);            
+            int offset =   (
+                (z % 2 == 0 && y % 2 == 0 && x % 2 == 0)
+                  ? (x_size_2 * y_size_2 * (z / 2)
+                     + x_size_2 * (y / 2)
+                     + x / 2)
+                  : 0
+              )
+            + (
+                (x % 2 != 0 && y % 2 == 0)
+                  ? ( 33 * 33
+                      + 33 * 32 * (z / 2)
+                      + 33 * (x / 2)
+                      + y / 2)
+                  : 0
+              )
+            + (
+                (x % 2 == 0 && y % 2 != 0)
+                  ? ( 33 * 33
+                      + 33 * 32
+                      + 33 * 32 * (z / 2)
+                      + 33 * (y / 2)
+                      + x / 2)
+                  : 0
+              )
+            + (
+                // 上面三个条件都不满足时，进入 else 分支
+                (x % 2 != 0 && y % 2 != 0)
+                  ? ( 33 * 33
+                      + 33 * 32 * 2
+                      + 32 * 32 * (z / 2)
+                      + 32 * (y / 2)
+                      + x / 2 )
+                  : 0
+              );
+            
+        
+          dram_buf[gid] = *(s_buf + offset);
+            // if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) dram_buf[gid] = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2);
+            // else if(x % 2 != 0 and y % 2 == 0) dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
+            // else if(x % 2 == 0 and y % 2 != 0) dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2));
+            // else dram_buf[gid] = *(s_buf + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2));
 
             // if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) candidate = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) ;
             // else if(x % 2 != 0 and y % 2 == 0) candidate = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
@@ -696,11 +808,48 @@ shmem2global_data_with_compaction(volatile T1 s_buf_[AnchorBlockSizeZ * numAncho
         auto gz  = (z + BIZ * AnchorBlockSizeZ * numAnchorBlockZ);
         //auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
         T1 candidate;
-
-        if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) candidate = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) ;
-        else if(x % 2 != 0 and y % 2 == 0) candidate = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
-        else if(x % 2 == 0 and y % 2 != 0) candidate = *(s_buf + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2));
-        else candidate = *(s_buf + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2));
+        // candidate = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) ;
+        int offset =   (
+            (z % 2 == 0 && y % 2 == 0 && x % 2 == 0)
+              ? (x_size_2 * y_size_2  * (z / 2)
+                 + x_size_2  * (y / 2)
+                 + x / 2)
+              : 0
+          )
+        + (
+            (x % 2 != 0 && y % 2 == 0)
+              ? ( 33 * 33
+                  + 33 * 32 * (z / 2)
+                  + 33 * (x / 2)
+                  + y / 2)
+              : 0
+          )
+        + (
+            (x % 2 == 0 && y % 2 != 0)
+              ? ( 33 * 33
+                  + 33 * 32
+                  + 33 * 32 * (z / 2)
+                  + 33 * (y / 2)
+                  + x / 2)
+              : 0
+          )
+        + (
+            // 上面三个条件都不满足时，进入 else 分支
+            (x % 2 != 0 && y % 2 != 0)
+              ? ( 33 * 33
+                  + 33 * 32 * 2
+                  + 32 * 32 * (z / 2)
+                  + 32 * (y / 2)
+                  + x / 2 )
+              : 0
+          );
+        
+    
+      candidate = *(s_buf + offset);
+        // if(z % 2 == 0 and y % 2 == 0 and x % 2 == 0) candidate = *(s_buf + x_size_2 * y_size_2 * z / 2 + x_size_2 * y / 2 + x / 2) ;
+        // else if(x % 2 != 0 and y % 2 == 0) candidate = *(s_buf + 33 * 33 + 33 * 32 * (z / 2) + 33 * (x / 2) + y / 2);
+        // else if(x % 2 == 0 and y % 2 != 0) candidate = *(s_buf + 33 * 33 + 33 * 32 + 33 * 32 * (z / 2) + 33 * (y / 2) + (x / 2));
+        // else candidate = *(s_buf + 33 * 33 + 33 * 32 * 2 + 32 * 32 * (z / 2) + 32 * (y / 2) + (x / 2));
 
         bool quantizable = (candidate >= 0) and (candidate < 2*radius);
 
@@ -1079,30 +1228,83 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 bool case4 = (input_gx + 3 * unit < input_gs);
                 bool case5 = (input_gx + unit < input_gs);
                 
-                
+                s_id[2] = case5 * s_id[2];
+                s_id[3] = case3 * case4 * s_id[3];
+                s_id[0] = case2 * s_id[0];
                 // 预加载 shared memory 数据到寄存器
-                T1 tmp0 = *((T1*)s_data + s_id[0]); 
-                T1 tmp1 = *((T1*)s_data + s_id[1]); 
-                T1 tmp2 = *((T1*)s_data + s_id[2]); 
-                T1 tmp3 = *((T1*)s_data + s_id[3]); 
+                T1 tmp0; 
+                T1 tmp1; 
+                T1 tmp2; 
+                T1 tmp3; 
+                tmp0 = *((T1*)s_data + s_id[0]); 
+                tmp1 = *((T1*)s_data + s_id[1]); 
+                tmp2 = *((T1*)s_data + s_id[2]); 
+                tmp3 = *((T1*)s_data + s_id[3]); 
     
                 // 初始预测值
                 pred = tmp1;
     
                 // 计算不同 case 对应的 pred
-                if ( (case1 && case2 && case3) || (!case1 && case2 && case3 && case4)) {
-                    pred = cubic_interpolator(tmp0, tmp1, tmp2, tmp3);
+                // if ( (case1 && case2 && case3) || (!case1 && case2 && case3 && case4)) {
+                //     pred = cubic_interpolator(tmp0, tmp1, tmp2, tmp3);
                     
-                }
-                else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
-                    pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
-                }
-                else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
-                    pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
-                }
-                else if ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5)) {
-                    pred = (tmp1 + tmp2) / 2;
-                }
+                // }
+                // else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
+                //     pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
+                // }
+                // else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
+                //     pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
+                // }
+                // else if ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5)) {
+                //     pred = (tmp1 + tmp2) / 2;
+                // }
+                int cond0 = ((case1 && case2 && case3) || (!case1 && case2 && case3 && case4));
+                int cond1 = ((case1 && case2 && !case3) || (!case1 && case2 && !(case3 && case4) && case5));
+                int cond2 = ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4));
+                int cond3 = ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5));
+                int state0 = cond0;
+                int state1 = (1 - cond0) * cond1;
+                int state2 = (1 - cond0) * (1 - cond1) * cond2;
+                int state3 = (1 - cond0) * (1 - cond1) * (1 - cond2) * cond3;
+                int state4 = (1 - cond0) * (1 - cond1) * (1 - cond2) * (1 - cond3);
+    
+                T1 coeff_x = 
+                    -1 * state0 +
+                    -1 * state1 +
+                    0 * state2 +
+                    0 * state3 +
+                    0 * state4;  // default
+    
+                T1 coeff_y =
+                    9 * state0 +
+                    6 * state1 +
+                    3 * state2 +
+                    1 * state3 +
+                    1 * state4;
+    
+                T1 coeff_z =
+                    9 * state0 +
+                    3 * state1 +
+                    6 * state2 +
+                    1 * state3 +
+                    0 * state4;
+    
+                T1 coeff_w =
+                    -1 * state0 +
+                    0 * state1 +
+                    -1 * state2 +
+                    0 * state3 +
+                    0 * state4;
+    
+                T1 N =
+                    16 * state0 +
+                    8 * state1 +
+                    8 * state2 +
+                    2 * state3 +
+                    1 * state4;
+    
+                pred = (coeff_x * tmp0 + coeff_y * tmp1 + coeff_z * tmp2 + coeff_w * tmp3) / T1(N);
+
 
             }
             auto get_interp_order = [&](auto x, auto BI, auto GD, auto gx, auto gs){
@@ -1180,62 +1382,153 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                     int case_num = interp_1 + interp_2 * 5;
 
 
+                    T1 tmp_1[4];
+                    T1 tmp_2[4];
+                    
+                    tmp_1[1] = *((T1*)s_data + s_id_1[1]);
+                    tmp_1[2] = *((T1*)s_data + s_id_1[2]);
+                    
+                    
+                    tmp_2[1] = *((T1*)s_data + s_id_2[1]);
+                    tmp_2[2] = *((T1*)s_data + s_id_2[2]);
+                    
+
                     if (interp_1 == 4 && interp_2 == 4) {
-                        pred = (cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
-                        *((T1*)s_data + s_id_1[1]), 
-                        *((T1*)s_data + s_id_1[2]), 
-                        *((T1*)s_data + s_id_1[3])) +
-                         cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
-                        *((T1*)s_data + s_id_2[1]), 
-                        *((T1*)s_data + s_id_2[2]), 
-                        *((T1*)s_data + s_id_2[3]))) / 2;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                    
+                        pred = (cubic_interpolator(tmp_1[0], 
+                        tmp_1[1], 
+                        tmp_1[2], 
+                        tmp_1[3]) +
+                         cubic_interpolator(tmp_2[0], 
+                        tmp_2[1], 
+                        tmp_2[2], 
+                        tmp_2[3])) / 2;
                     } else if (interp_1 != 4 && interp_2 == 4) {
-                        pred = cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
-                        *((T1*)s_data + s_id_2[1]), 
-                        *((T1*)s_data + s_id_2[2]), 
-                        *((T1*)s_data + s_id_2[3]));
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                    
+                        pred = cubic_interpolator(tmp_2[0], 
+                        tmp_2[1], 
+                        tmp_2[2], 
+                        tmp_2[3]);
                     } else if (interp_1 == 4 && interp_2 != 4) {
-                        pred = cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
-                        *((T1*)s_data + s_id_1[1]), 
-                        *((T1*)s_data + s_id_1[2]), 
-                        *((T1*)s_data + s_id_1[3]));
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        pred = cubic_interpolator(tmp_1[0], 
+                        tmp_1[1], 
+                        tmp_1[2], 
+                        tmp_1[3]);
                     } else if (interp_1 == 3 && interp_2 == 3) {
-                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        pred = (-(tmp_2[0])+6*(tmp_2[1]) + 3*(tmp_2[2])) / 8;
+                        pred += (-(tmp_1[0])+6*(tmp_1[1]) + 3*(tmp_1[2])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 3 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                        pred = (3*(tmp_2[1])+6*(tmp_2[2]) - (tmp_2[3])) / 8;
+                        pred += (-(tmp_1[0])+6*(tmp_1[1]) + 3*(tmp_1[2])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 3 && interp_2 < 2) {
-                        pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        pred = (-(tmp_1[0])+6*(tmp_1[1]) + 3*(tmp_1[2])) / 8;
                     } else if (interp_1 == 2 && interp_2 == 3) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        pred = (3*(tmp_1[1])+6*(tmp_1[2]) - (tmp_1[3])) / 8;
+                        pred += (-(tmp_2[0])+6*(tmp_2[1]) + 3*(tmp_2[2])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 2 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                        pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        pred = (3*(tmp_1[1])+6*(tmp_1[2]) - (tmp_1[3])) / 8;
+                        pred += (3*(tmp_2[1])+6*(tmp_2[2]) - (tmp_2[3])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 2 && interp_2 < 2) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        pred = (3*(tmp_1[1])+6*(tmp_1[2]) - (tmp_1[3])) / 8;
                     } else if (interp_1 <= 1 && interp_2 == 3) {
-                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        pred = (-(tmp_2[0])+6*(tmp_2[1]) + 3*(tmp_2[2])) / 8;
                     } else if (interp_1 <= 1 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                        pred = (3*(tmp_2[1])+6*(tmp_2[2]) - (tmp_2[3])) / 8;
                     } else if (interp_1 == 1 && interp_2 == 1) {
-                        pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
-                        pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                        pred = ((tmp_2[1])+(tmp_2[2])) / 2;
+                        pred += ((tmp_1[1])+(tmp_1[2])) / 2;
                         pred /= 2;
                     } else if (interp_1 == 1 && interp_2 < 1) {
                         
-                        pred = ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                        pred = ((tmp_1[1])+(tmp_1[2])) / 2;
                     } else if (interp_1 == 0 && interp_2 == 1) {
-                        pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                        pred = ((tmp_2[1])+(tmp_2[2])) / 2;
                     }
                     else{
-                        pred = (*((T1*)s_data + s_id_1[1])) + (*((T1*)s_data + s_id_2[1])) - pred;
+                        pred = (tmp_1[1]) + (tmp_2[1]) - pred;
                     }
+
+
+                    // if (interp_1 == 4 && interp_2 == 4) {
+                    //     pred = (cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
+                    //     *((T1*)s_data + s_id_1[1]), 
+                    //     *((T1*)s_data + s_id_1[2]), 
+                    //     *((T1*)s_data + s_id_1[3])) +
+                    //      cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
+                    //     *((T1*)s_data + s_id_2[1]), 
+                    //     *((T1*)s_data + s_id_2[2]), 
+                    //     *((T1*)s_data + s_id_2[3]))) / 2;
+                    // } else if (interp_1 != 4 && interp_2 == 4) {
+                    //     pred = cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
+                    //     *((T1*)s_data + s_id_2[1]), 
+                    //     *((T1*)s_data + s_id_2[2]), 
+                    //     *((T1*)s_data + s_id_2[3]));
+                    // } else if (interp_1 == 4 && interp_2 != 4) {
+                    //     pred = cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
+                    //     *((T1*)s_data + s_id_1[1]), 
+                    //     *((T1*)s_data + s_id_1[2]), 
+                    //     *((T1*)s_data + s_id_1[3]));
+                    // } else if (interp_1 == 3 && interp_2 == 3) {
+                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 3 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 3 && interp_2 < 2) {
+                    //     pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    // } else if (interp_1 == 2 && interp_2 == 3) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 2 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    //     pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 2 && interp_2 < 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    // } else if (interp_1 <= 1 && interp_2 == 3) {
+                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    // } else if (interp_1 <= 1 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    // } else if (interp_1 == 1 && interp_2 == 1) {
+                    //     pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                    //     pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 1 && interp_2 < 1) {
+                        
+                    //     pred = ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                    // } else if (interp_1 == 0 && interp_2 == 1) {
+                    //     pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                    // }
+                    // else{
+                    //     pred = (*((T1*)s_data + s_id_1[1])) + (*((T1*)s_data + s_id_2[1])) - pred;
+                    // }
                     
             }
 
@@ -1294,7 +1587,8 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
             int offset = x_size * y_size * (z / 2) + x_size * (y / 2) + (x / 2);
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
                
-                auto          err = *(s_data + offset) - pred;
+                T1          err;
+                err = *(s_data + offset) - pred;
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
                 {
@@ -1477,30 +1771,83 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                 bool case4 = (input_gx + 3 * unit < input_gs);
                 bool case5 = (input_gx + unit < input_gs);
                 
-                
+                s_id[2] = case5 * s_id[2];
+                s_id[3] = case3 * case4 * s_id[3];
+                s_id[0] = case2 * s_id[0];
                 // 预加载 shared memory 数据到寄存器
-                T1 tmp0 = *((T1*)s_data + s_id[0]); 
-                T1 tmp1 = *((T1*)s_data + s_id[1]); 
-                T1 tmp2 = *((T1*)s_data + s_id[2]); 
-                T1 tmp3 = *((T1*)s_data + s_id[3]); 
+                T1 tmp0; 
+                T1 tmp1; 
+                T1 tmp2; 
+                T1 tmp3; 
+                tmp0 = *((T1*)s_data + s_id[0]); 
+                tmp1 = *((T1*)s_data + s_id[1]); 
+                tmp2 = *((T1*)s_data + s_id[2]); 
+                tmp3 = *((T1*)s_data + s_id[3]); 
     
                 // 初始预测值
                 pred = tmp1;
     
                 // 计算不同 case 对应的 pred
-                if ( (case1 && case2 && case3) || (!case1 && case2 && case3 && case4)) {
-                    pred = cubic_interpolator(tmp0, tmp1, tmp2, tmp3);
+                // if ( (case1 && case2 && case3) || (!case1 && case2 && case3 && case4)) {
+                //     pred = cubic_interpolator(tmp0, tmp1, tmp2, tmp3);
                     
-                }
-                else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
-                    pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
-                }
-                else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
-                    pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
-                }
-                else if ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5)) {
-                    pred = (tmp1 + tmp2) / 2;
-                }
+                // }
+                // else if ((case1 && case2 && !case3) || ( !case1 && case2 && !(case3 && case4) && case5)) {
+                //     pred = (-tmp0 + 6 * tmp1 + 3 * tmp2) / 8;
+                // }
+                // else if ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4 )){
+                //     pred = (3 * tmp1 + 6 * tmp2 - tmp3) / 8;   
+                // }
+                // else if ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5)) {
+                //     pred = (tmp1 + tmp2) / 2;
+                // }
+                int cond0 = ((case1 && case2 && case3) || (!case1 && case2 && case3 && case4));
+            int cond1 = ((case1 && case2 && !case3) || (!case1 && case2 && !(case3 && case4) && case5));
+            int cond2 = ((case1 && !case2 && case3) || (!case1 && !case2 && case3 && case4));
+            int cond3 = ((case1 && !case2 && !case3) || (!case1 && !case2 && !(case3 && case4) && case5));
+            int state0 = cond0;
+            int state1 = (1 - cond0) * cond1;
+            int state2 = (1 - cond0) * (1 - cond1) * cond2;
+            int state3 = (1 - cond0) * (1 - cond1) * (1 - cond2) * cond3;
+            int state4 = (1 - cond0) * (1 - cond1) * (1 - cond2) * (1 - cond3);
+
+            T1 coeff_x = 
+                -1 * state0 +
+                -1 * state1 +
+                0 * state2 +
+                0 * state3 +
+                0 * state4;  // default
+
+            T1 coeff_y =
+                9 * state0 +
+                6 * state1 +
+                3 * state2 +
+                1 * state3 +
+                1 * state4;
+
+            T1 coeff_z =
+                9 * state0 +
+                3 * state1 +
+                6 * state2 +
+                1 * state3 +
+                0 * state4;
+
+            T1 coeff_w =
+                -1 * state0 +
+                0 * state1 +
+                -1 * state2 +
+                0 * state3 +
+                0 * state4;
+
+            T1 N =
+                16 * state0 +
+                8 * state1 +
+                8 * state2 +
+                2 * state3 +
+                1 * state4;
+
+            pred = (coeff_x * tmp0 + coeff_y * tmp1 + coeff_z * tmp2 + coeff_w * tmp3) / T1(N);
+
 
             }
             
@@ -1588,64 +1935,154 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
                     auto interp_2 = get_interp_order(x_2,BI_2,GD_2,gx_2,gs_2);
 
                     int case_num = interp_1 + interp_2 * 5;
-
+                    T1 tmp_1[4];
+                    T1 tmp_2[4];
+                    
+                    tmp_1[1] = *((T1*)s_data + s_id_1[1]);
+                    tmp_1[2] = *((T1*)s_data + s_id_1[2]);
+                    
+                    
+                    
+                    tmp_2[1] = *((T1*)s_data + s_id_2[1]);
+                    tmp_2[2] = *((T1*)s_data + s_id_2[2]);
+                    
 
                     if (interp_1 == 4 && interp_2 == 4) {
-                        pred = (cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
-                        *((T1*)s_data + s_id_1[1]), 
-                        *((T1*)s_data + s_id_1[2]), 
-                        *((T1*)s_data + s_id_1[3])) +
-                         cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
-                        *((T1*)s_data + s_id_2[1]), 
-                        *((T1*)s_data + s_id_2[2]), 
-                        *((T1*)s_data + s_id_2[3]))) / 2;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                    
+                        pred = (cubic_interpolator(tmp_1[0], 
+                        tmp_1[1], 
+                        tmp_1[2], 
+                        tmp_1[3]) +
+                         cubic_interpolator(tmp_2[0], 
+                        tmp_2[1], 
+                        tmp_2[2], 
+                        tmp_2[3])) / 2;
                     } else if (interp_1 != 4 && interp_2 == 4) {
-                        pred = cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
-                        *((T1*)s_data + s_id_2[1]), 
-                        *((T1*)s_data + s_id_2[2]), 
-                        *((T1*)s_data + s_id_2[3]));
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                    
+                        pred = cubic_interpolator(tmp_2[0], 
+                        tmp_2[1], 
+                        tmp_2[2], 
+                        tmp_2[3]);
                     } else if (interp_1 == 4 && interp_2 != 4) {
-                        pred = cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
-                        *((T1*)s_data + s_id_1[1]), 
-                        *((T1*)s_data + s_id_1[2]), 
-                        *((T1*)s_data + s_id_1[3]));
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        pred = cubic_interpolator(tmp_1[0], 
+                        tmp_1[1], 
+                        tmp_1[2], 
+                        tmp_1[3]);
                     } else if (interp_1 == 3 && interp_2 == 3) {
-                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        pred = (-(tmp_2[0])+6*(tmp_2[1]) + 3*(tmp_2[2])) / 8;
+                        pred += (-(tmp_1[0])+6*(tmp_1[1]) + 3*(tmp_1[2])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 3 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                        pred = (3*(tmp_2[1])+6*(tmp_2[2]) - (tmp_2[3])) / 8;
+                        pred += (-(tmp_1[0])+6*(tmp_1[1]) + 3*(tmp_1[2])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 3 && interp_2 < 2) {
-                        pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                        tmp_1[0] = *((T1*)s_data + s_id_1[0]);
+                        pred = (-(tmp_1[0])+6*(tmp_1[1]) + 3*(tmp_1[2])) / 8;
                     } else if (interp_1 == 2 && interp_2 == 3) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                        pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        pred = (3*(tmp_1[1])+6*(tmp_1[2]) - (tmp_1[3])) / 8;
+                        pred += (-(tmp_2[0])+6*(tmp_2[1]) + 3*(tmp_2[2])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 2 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
-                        pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        pred = (3*(tmp_1[1])+6*(tmp_1[2]) - (tmp_1[3])) / 8;
+                        pred += (3*(tmp_2[1])+6*(tmp_2[2]) - (tmp_2[3])) / 8;
                         pred /= 2;
                     } else if (interp_1 == 2 && interp_2 < 2) {
-                        pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                        tmp_1[3] = *((T1*)s_data + s_id_1[3]);
+                        pred = (3*(tmp_1[1])+6*(tmp_1[2]) - (tmp_1[3])) / 8;
                     } else if (interp_1 <= 1 && interp_2 == 3) {
-                        pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                        tmp_2[0] = *((T1*)s_data + s_id_2[0]);
+                        pred = (-(tmp_2[0])+6*(tmp_2[1]) + 3*(tmp_2[2])) / 8;
                     } else if (interp_1 <= 1 && interp_2 == 2) {
-                        pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                        tmp_2[3] = *((T1*)s_data + s_id_2[3]);
+                        pred = (3*(tmp_2[1])+6*(tmp_2[2]) - (tmp_2[3])) / 8;
                     } else if (interp_1 == 1 && interp_2 == 1) {
-                        pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
-                        pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                        pred = ((tmp_2[1])+(tmp_2[2])) / 2;
+                        pred += ((tmp_1[1])+(tmp_1[2])) / 2;
                         pred /= 2;
                     } else if (interp_1 == 1 && interp_2 < 1) {
                         
-                        pred = ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                        pred = ((tmp_1[1])+(tmp_1[2])) / 2;
                     } else if (interp_1 == 0 && interp_2 == 1) {
-                        pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                        pred = ((tmp_2[1])+(tmp_2[2])) / 2;
                     }
                     else{
-                        pred = (*((T1*)s_data + s_id_1[1])) + (*((T1*)s_data + s_id_2[1])) - pred;
+                        pred = (tmp_1[1]) + (tmp_2[1]) - pred;
                     }
+
+
+                    // if (interp_1 == 4 && interp_2 == 4) {
+                    //     pred = (cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
+                    //     *((T1*)s_data + s_id_1[1]), 
+                    //     *((T1*)s_data + s_id_1[2]), 
+                    //     *((T1*)s_data + s_id_1[3])) +
+                    //      cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
+                    //     *((T1*)s_data + s_id_2[1]), 
+                    //     *((T1*)s_data + s_id_2[2]), 
+                    //     *((T1*)s_data + s_id_2[3]))) / 2;
+                    // } else if (interp_1 != 4 && interp_2 == 4) {
+                    //     pred = cubic_interpolator(*((T1*)s_data + s_id_2[0]), 
+                    //     *((T1*)s_data + s_id_2[1]), 
+                    //     *((T1*)s_data + s_id_2[2]), 
+                    //     *((T1*)s_data + s_id_2[3]));
+                    // } else if (interp_1 == 4 && interp_2 != 4) {
+                    //     pred = cubic_interpolator(*((T1*)s_data + s_id_1[0]), 
+                    //     *((T1*)s_data + s_id_1[1]), 
+                    //     *((T1*)s_data + s_id_1[2]), 
+                    //     *((T1*)s_data + s_id_1[3]));
+                    // } else if (interp_1 == 3 && interp_2 == 3) {
+                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 3 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 3 && interp_2 < 2) {
+                    //     pred = (-(*((T1*)s_data + s_id_1[0]))+6*(*((T1*)s_data + s_id_1[1])) + 3*(*((T1*)s_data + s_id_1[2]))) / 8;
+                    // } else if (interp_1 == 2 && interp_2 == 3) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    //     pred += (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 2 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    //     pred += (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 2 && interp_2 < 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_1[1]))+6*(*((T1*)s_data + s_id_1[2])) - (*((T1*)s_data + s_id_1[3]))) / 8;
+                    // } else if (interp_1 <= 1 && interp_2 == 3) {
+                    //     pred = (-(*((T1*)s_data + s_id_2[0]))+6*(*((T1*)s_data + s_id_2[1])) + 3*(*((T1*)s_data + s_id_2[2]))) / 8;
+                    // } else if (interp_1 <= 1 && interp_2 == 2) {
+                    //     pred = (3*(*((T1*)s_data + s_id_2[1]))+6*(*((T1*)s_data + s_id_2[2])) - (*((T1*)s_data + s_id_2[3]))) / 8;
+                    // } else if (interp_1 == 1 && interp_2 == 1) {
+                    //     pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                    //     pred += ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                    //     pred /= 2;
+                    // } else if (interp_1 == 1 && interp_2 < 1) {
+                        
+                    //     pred = ((*((T1*)s_data + s_id_1[1]))+(*((T1*)s_data + s_id_1[2]))) / 2;
+                    // } else if (interp_1 == 0 && interp_2 == 1) {
+                    //     pred = ((*((T1*)s_data + s_id_2[1]))+(*((T1*)s_data + s_id_2[2]))) / 2;
+                    // }
+                    // else{
+                    //     pred = (*((T1*)s_data + s_id_1[1])) + (*((T1*)s_data + s_id_2[1])) - pred;
+                    // }
                     
             }
 
@@ -1723,7 +2160,8 @@ volatile T2 s_ectrl_[AnchorBlockSizeZ * numAnchorBlockZ + (SPLINE_DIM >= 3)]
             
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
                
-                auto err = s_data[tmp_offset] - pred;
+                T1 err;
+                err = s_data[tmp_offset] - pred;
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
                 {
